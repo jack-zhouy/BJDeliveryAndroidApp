@@ -7,11 +7,13 @@
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
     <!-- 要求当前设备必须要有NFC芯片 -->
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
 
@@ -40,9 +42,16 @@
         <activity android:name=".ui.MyOrdersActivity"
             android:launchMode="singleTop"
             android:label="我的订单"/>
+        <activity android:name=".ui.HistoryOrdersActivity"
+            android:launchMode="singleTop"
+            android:label="历史订单"/>
         <activity android:name=".ui.OrderDetailActivity"
             android:launchMode="singleTop"
             android:label="订单详情"/>
+
+        <activity android:name=".ui.MybottlesActivity"
+            android:launchMode="singleTop"
+            android:label="我的气瓶"/>
 
 
         <activity android:name=".MainActivity"
@@ -72,6 +81,12 @@
         <activity android:name=".ui.WriteMUActivity"
             android:launchMode="singleTop"
             android:label="@string/str_write_mu"/>
+
+        <receiver android:name=".receiver.LocationReceiver">
+            <intent-filter>
+                <action android:name="LOCATION_CLOCK" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

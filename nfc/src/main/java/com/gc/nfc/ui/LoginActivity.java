@@ -36,7 +36,6 @@ import android.media.MediaPlayer;
 
 public class LoginActivity  extends BaseActivity implements OnClickListener {
 
-	private ImageView imageview_back;
 	private EditText edittext_username, edittext_password;
 	private Button login;
 
@@ -54,20 +53,15 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 
 		setContentView(R.layout.activity_login);
 
-		imageview_back = (ImageView) findViewById(R.id.imageview_back);
 		login = (Button) findViewById(R.id.button_login);
 		edittext_username = (EditText) findViewById(R.id.login_userName);
 		edittext_password = (EditText) findViewById(R.id.login_userPassword);
-		imageview_back.setOnClickListener(this);
 		login.setOnClickListener(this);
 
 	}
 
 	public void onClick(View v) {
 		switch (v.getId()) {
-			case R.id.imageview_back:
-				finish();
-				break;
 			case R.id.button_login:
 				// get请求
 				NetRequestConstant nrc = new NetRequestConstant();

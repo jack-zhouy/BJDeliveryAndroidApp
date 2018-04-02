@@ -116,6 +116,9 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 				case 1://待配送
 					m_buttonNext.setText("下一步");
 					break;
+				case -1://历史订单，不需要下一步操作按钮
+					m_buttonNext.setVisibility(View.INVISIBLE);
+					break;
 				default:
 					m_buttonNext.setVisibility(View.INVISIBLE);
 					break;

@@ -14,7 +14,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
-            android:text="  我的订单"
+            android:text="  我的气瓶"
             android:textColor="@color/white"
             android:textSize="18sp" />
     </LinearLayout>

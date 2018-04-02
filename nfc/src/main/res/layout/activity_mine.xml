@@ -230,7 +230,7 @@
                 android:background="@color/textgray" />
 
             <LinearLayout
-                android:id="@+id/lL_myOrder"
+                android:id="@+id/lL_myHistoryOrders"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginTop="10dp"

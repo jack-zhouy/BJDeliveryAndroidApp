@@ -39,80 +39,19 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
-//		switch (v.getId()) {
-//		case R.id.iV_mine1:// 美团通知
-//			Intent intent = new Intent(MineActivity.this, NotificationActivity.class);
-//			startActivity(intent);
-//
-//			break;
-//		case R.id.lL_mine:
-//		case R.id.button_register:// 登录
-//			Intent intent1 = new Intent(MineActivity.this, LoginActivity.class);
-//			startActivityForResult(intent1, 12);
-//
-//			break;
-//		case R.id.rL_mine:// 我的美团卷
-//			if (user != null) {
-//				Intent intent2 = new Intent(MineActivity.this, TicketActivity.class);
-//				startActivity(intent2);
-//			} else {
-//				Toast.makeText(this, "亲，请先登录", Toast.LENGTH_SHORT).show();
-//			}
-//
-//			break;
-//		case R.id.rL_mine1:
-//			if (user != null) {
-//				Intent intent3 = new Intent(MineActivity.this,
-//						CollectActivity.class);
-//				startActivity(intent3);
-//			} else {
-//				Toast.makeText(this, "亲，请先登录", Toast.LENGTH_SHORT).show();
-//			}
-//
-//			break;
-//		case R.id.lL_mine3:// 每日推荐
-//			Intent intent4 = new Intent(MineActivity.this,
-//					RecommendedActivity.class);
-//			startActivity(intent4);
-//			break;
-//		case R.id.lL_mine4:
-//			if (user != null) {
-//				Intent intent5 = new Intent(MineActivity.this,
-//						ObligationActivity.class);
-//				startActivity(intent5);
-//			} else {
-//				Toast.makeText(this, "亲，请先登录", Toast.LENGTH_SHORT).show();
-//			}
-//
-//			break;
-//		case R.id.lL_mine5:
-//			if (user != null) {
-//				Intent intent6 = new Intent(MineActivity.this, PaidActivity.class);
-//				startActivity(intent6);
-//			} else {
-//				Toast.makeText(this, "亲，请先登录", Toast.LENGTH_SHORT).show();
-//			}
-//			break;
-//		case R.id.lL_mine6:// 抽奖单
-//			if (user != null) {
-//				Intent intent7 = new Intent(MineActivity.this,
-//						LotteryActivity.class);
-//				startActivity(intent7);
-//			} else {
-//				Toast.makeText(this, "亲，请先登录", Toast.LENGTH_SHORT).show();
-//			}
-//			break;
-//		case R.id.lL_mine7:
-//			Intent intent8 = new Intent(MineActivity.this,
-//					VoucherActivity.class);
-//			startActivity(intent8);
-//			break;
-//		case R.id.lL_mine2:
-//			startActivityForResult(new Intent(this, AccountActivity.class), 11);
-//			break;
-//		default:
-//			break;
-//		}
+		Intent intent;
+		switch (v.getId()) {
+			case R.id.lL_myHistoryOrders:// 历史订单
+				intent = new Intent(MineActivity.this, HistoryOrdersActivity.class);
+				startActivity(intent);
+				break;
+			case R.id.lL_myBottle:// 我的气瓶
+				intent = new Intent(MineActivity.this, MybottlesActivity.class);
+				startActivity(intent);
+				break;
+			default:
+				break;
+		}
 
 	}
 
@@ -122,12 +61,12 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		iv_mine1 = (ImageView) findViewById(R.id.iV_mine1);
 
 		lL_myBottle = (LinearLayout) findViewById(R.id.lL_myBottle);// 我的气瓶
-		lL_myHistoryOrders = (LinearLayout) findViewById(R.id.lL_myOrder);//历史订单
+		lL_myHistoryOrders = (LinearLayout) findViewById(R.id.lL_myHistoryOrders);//历史订单
 		textview_username = (TextView) findViewById(R.id.textview_username);
 
-		iv_mine1.setOnClickListener(this);
+
 		lL_myBottle.setOnClickListener(this);
-		lL_myBottle.setOnClickListener(this);
+		lL_myHistoryOrders.setOnClickListener(this);
 
 	}
 }

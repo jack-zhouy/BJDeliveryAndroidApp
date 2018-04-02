@@ -2,7 +2,10 @@ package com.gc.nfc.ui;
 
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
+import com.gc.nfc.receiver.LocationReceiver;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.os.Bundle;
 import android.app.TabActivity;
 import android.content.Intent;
@@ -14,6 +17,7 @@ import android.widget.LinearLayout;
 import android.widget.TabHost;
 import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
+
 
 public class MainlyActivity extends TabActivity implements OnClickListener {
 
@@ -34,6 +38,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	private LinearLayout linearlayout_myorders;
 	private LinearLayout linearlayout_mine;
 	private LinearLayout linearlayout_more;
+
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -59,6 +64,8 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 				host.setCurrentTabByTag(MYSELF_STRING);//默认我的界面
 			}
 		}
+		//开启定位任务
+		LocationReceiver.startLocation(this);
 	}
 
 	public void initView(){
@@ -189,4 +196,6 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	     appContext.setScreenWidth(screenWidth);
 	     appContext.setScreenHeight(screenHeight);
 	}
+
+
 }
