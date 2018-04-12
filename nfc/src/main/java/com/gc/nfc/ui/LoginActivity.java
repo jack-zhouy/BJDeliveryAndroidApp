@@ -68,12 +68,12 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 				nrc.setType(HttpRequestType.GET);
 				final String username = edittext_username.getText().toString();
 				final String password = edittext_password.getText().toString();
-				NetRequestConstant.requestUrl = NetUrlConstant.LOGINURL;
-				NetRequestConstant.context = this;
+				nrc.requestUrl = NetUrlConstant.LOGINURL;
+				nrc.context = this;
 				Map<String, Object> params = new HashMap<String, Object>();
 				params.put("userId", username);
 				params.put("password", password);
-				NetRequestConstant.setParams(params);
+				nrc.setParams(params);
 				getServer(new Netcallback() {
 					public void preccess(Object res, boolean flag) {
 						if(flag){

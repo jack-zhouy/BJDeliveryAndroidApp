@@ -84,7 +84,7 @@ public class NetUtil {
 				HttpPost httpRequest=new HttpPost(requestUrl);
 
 				//发送请求的参数
-	            Map<String, Object> body = NetRequestConstant.body;
+	            Map<String, Object> body = nrc.body;
 
 				List<NameValuePair> parameters = new ArrayList<NameValuePair>();
 
@@ -99,7 +99,7 @@ public class NetUtil {
 				//发送请求并等待响应
 				HttpResponse httpResponse=httpClient.execute(httpRequest);
 
-				Logger.e( "NetUtil Code ：" + NetRequestConstant.requestUrl);
+				Logger.e( "NetUtil Code ：" + nrc.requestUrl);
 				return httpResponse;
 
 			} catch (UnsupportedEncodingException e) {

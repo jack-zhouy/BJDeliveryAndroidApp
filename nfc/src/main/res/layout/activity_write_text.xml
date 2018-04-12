@@ -36,6 +36,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/tv_nfctext"
-        android:src="@drawable/nfc_write"/>
+        android:src="@drawable/icon_password"/>
 
 </RelativeLayout>

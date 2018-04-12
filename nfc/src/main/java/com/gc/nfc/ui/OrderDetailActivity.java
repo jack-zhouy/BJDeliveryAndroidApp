@@ -38,7 +38,35 @@ import android.widget.ListAdapter;
 import android.view.ViewGroup;
 import android.view.Gravity;
 
-public class OrderDetailActivity extends BaseActivity implements OnClickListener {
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+
+import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.Poi;
+import com.amap.api.navi.AMapNavi;
+import com.amap.api.navi.AmapNaviPage;
+import com.amap.api.navi.AmapNaviParams;
+import com.amap.api.navi.AmapNaviTheme;
+import com.amap.api.navi.AmapNaviType;
+import com.amap.api.navi.AmapPageType;
+import com.amap.api.navi.INaviInfoCallback;
+import com.amap.api.navi.model.AMapNaviLocation;
+
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+
+
+
+public class OrderDetailActivity extends BaseActivity implements OnClickListener, INaviInfoCallback {
 
 	private TextView m_textViewOrderSn;//订单号
 	private TextView m_textViewUserInfo;//用户信息
@@ -53,6 +81,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 
 	private Button m_buttonNext;//下一步
+	private ImageView m_imageViewNav;//导航
 
 	private AppContext appContext;
 
@@ -62,7 +91,11 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	private int m_orderStatus;//订单状态
 	private User m_user;//当前登录用户
 
+	private LatLng m_recvLocation;//收货地址经纬度
+
 	private String m_businessKey;//订单号
+
+	private String m_recvAddr;//收获地址
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +127,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_textViewCreateTime = (TextView) findViewById(R.id.textview_createTime);
 			m_textViewAddress = (TextView) findViewById(R.id.textview_address);
 			m_listView = (ListView) findViewById(R.id.listview);
+			m_imageViewNav = (ImageView) findViewById(R.id.imageView_nav);
 
 			m_textViewPayStatus = (TextView) findViewById(R.id.textview_payStatus);
 			m_textViewOrderStatus = (TextView) findViewById(R.id.textview_orderStatus);
@@ -101,12 +135,14 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_textViewPs = (TextView) findViewById(R.id.textview_ps);
 
 			m_buttonNext.setOnClickListener(this);
+			m_imageViewNav.setOnClickListener(this);
 
 
 			//数据初始化
 			setOrderHeadInfo();
 			setOrderDetailsInfo();
 			setOrderAppendInfo();
+			getRecvLocation();
 
 			//初始化按钮显示
 			switch (m_orderStatus){
@@ -167,6 +203,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			JSONObject addressJson = orderJson.getJSONObject("recvAddr");
 			String strAddress = "地址："+addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
 			m_textViewAddress.setText(strAddress);
+			m_recvAddr = strAddress;
 		}catch (JSONException e){
 			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
@@ -206,6 +243,16 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 					Toast.LENGTH_LONG).show();
 		}
 	}
+	//获取订单的收货地址经纬度
+	private void getRecvLocation(){
+		try {
+			JSONObject orderJson = m_OrderJson;
+			m_recvLocation = new LatLng(orderJson.getDouble("recvLatitude"), orderJson.getDouble("recvLongitude"));
+		} catch (JSONException e){
+			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		}
+	}
 
 	//设置订单附加信息
 	private void setOrderAppendInfo() {
@@ -230,11 +277,21 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 			//预约时间
 			String strReserveTime = orderJson.get("reserveTime").toString();
-			m_textViewReserveTime.setText(strReserveTime);
+			if(strReserveTime.equals("null")){
+				m_textViewReserveTime.setText("无");
+			}else{
+				m_textViewReserveTime.setText(strReserveTime);
+			}
+
 
 			//备注
 			String strComment = orderJson.get("comment").toString();
-			m_textViewPs.setText(strComment);
+			if(strComment.equals("null")){
+				m_textViewPs.setText("无");
+			}else{
+				m_textViewPs.setText(strComment);
+			}
+
 
 		}catch (JSONException e){
 			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
@@ -246,61 +303,159 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				if(m_user==null){
-					Toast.makeText(OrderDetailActivity.this, "未登录！", Toast.LENGTH_LONG).show();
+				if(m_orderStatus==0){//抢单
+					getOrderOps();
+				}else if(m_orderStatus==1){//配送
+					dealOrderOps();
+				}else{
 					return;
 				}
-				// get请求
-				NetRequestConstant nrc = new NetRequestConstant();
-				nrc.setType(HttpRequestType.GET);
-				NetRequestConstant.requestUrl = NetUrlConstant.TASKORDERDEALURL+"/"+m_taskId;
-				NetRequestConstant.context = this;
-				Map<String, Object> params = new HashMap<String, Object>();
-				params.put("businessKey", m_businessKey);
-				params.put("candiUser", m_user.getUsername());
-				params.put("orderStatus", 1);
-				NetRequestConstant.setParams(params);
 
-				getServer(new Netcallback() {
-					public void preccess(Object res, boolean flag) {
-						if(flag){
-							HttpResponse response=(HttpResponse)res;
-							if(response!=null){
-								if(response.getStatusLine().getStatusCode()==200){
-									Toast toast = Toast.makeText(OrderDetailActivity.this, "抢单成功！", Toast.LENGTH_LONG);
-									toast.setGravity(Gravity.CENTER, 0, 0);
-									toast.show();
-
-									MediaPlayer music = MediaPlayer.create(OrderDetailActivity.this, R.raw.get_order);
-									music.start();
-									Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
-									Bundle bundle = new Bundle();
-
-									bundle.putInt("switchTab", 1);//tab跳转到我的订单
-									intent.putExtras(bundle);
-
-									startActivity(intent);
-									finish();
-
-
-								}else{
-									Toast.makeText(OrderDetailActivity.this, "抢单失败", Toast.LENGTH_LONG).show();
-								}
-							}else {
-								Toast.makeText(OrderDetailActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}
-						} else {
-							Toast.makeText(OrderDetailActivity.this, "网络未连接！",
-									Toast.LENGTH_LONG).show();
-						}
-					}
-				}, nrc);
-
+				break;
+			case R.id.imageView_nav://导航
+				switchNavBar();
 				break;
 			default:
 				break;
 		}
+
+	}
+
+	//配送
+	private void dealOrderOps(){
+		Intent intent = new Intent();
+		Bundle bundle = new Bundle();
+		bundle.putString("taskId", m_taskId);
+		bundle.putString("order", m_OrderJson.toString());
+		bundle.putString("businessKey", m_businessKey);//订单号
+		intent.setClass(OrderDetailActivity.this, OrderDealActivity.class);
+		intent.putExtras(bundle);
+		startActivity(intent);
+	}
+
+
+	//抢单
+	private void getOrderOps(){
+		if(m_user==null){
+			Toast.makeText(OrderDetailActivity.this, "未登录！", Toast.LENGTH_LONG).show();
+			return;
+		}
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+		nrc.requestUrl = NetUrlConstant.TASKORDERDEALURL+"/"+m_taskId;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("businessKey", m_businessKey);
+		params.put("candiUser", m_user.getUsername());
+		params.put("orderStatus", 1);
+		nrc.setParams(params);
+
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							Toast toast = Toast.makeText(OrderDetailActivity.this, "抢单成功！", Toast.LENGTH_LONG);
+							toast.setGravity(Gravity.CENTER, 0, 0);
+							toast.show();
+
+							MediaPlayer music = MediaPlayer.create(OrderDetailActivity.this, R.raw.get_order);
+							music.start();
+							Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
+							Bundle bundle = new Bundle();
+
+							bundle.putInt("switchTab", 1);//tab跳转到我的订单
+							intent.putExtras(bundle);
+
+							startActivity(intent);
+							finish();
+
+
+						}else{
+							Toast.makeText(OrderDetailActivity.this, "抢单失败", Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(OrderDetailActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(OrderDetailActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+
+	}
+
+	//导航
+	private void switchNavBar(){
+		//获取当前位置
+		AppContext appContext = (AppContext) getApplicationContext();
+		LatLng startP = appContext.getLocation();
+
+		LatLng endP = m_recvLocation;
+
+		AmapNaviPage.getInstance().showRouteActivity(getApplicationContext(), new AmapNaviParams(new Poi("当前位置", startP, ""), null, new Poi(m_recvAddr, endP, ""), AmapNaviType.DRIVER), OrderDetailActivity.this);
+		AMapNavi mAMapNavi = null;
+		mAMapNavi = AMapNavi.getInstance(this);
+		mAMapNavi.setUseInnerVoice(true);
+	}
+
+	@Override
+	public void onInitNaviFailure() {
+
+	}
+
+	@Override
+	public void onLocationChange(AMapNaviLocation aMapNaviLocation) {
+
+	}
+
+	@Override
+	public void onArriveDestination(boolean b) {
+
+	}
+
+	@Override
+	public void onStartNavi(int i) {
+
+	}
+
+	@Override
+	public void onCalculateRouteSuccess(int[] ints) {
+
+	}
+
+	@Override
+	public void onCalculateRouteFailure(int i) {
+
+	}
+
+	@Override
+	public void onGetNavigationText(String s) {
+
+	}
+
+	@Override
+	public void onStopSpeaking() {
+
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+
+	}
+
+	@Override
+	public void onReCalculateRoute(int i) {
+
+	}
+
+	@Override
+	public void onExitPage(int i) {
 
 	}
 

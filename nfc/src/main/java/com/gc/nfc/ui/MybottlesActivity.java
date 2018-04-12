@@ -41,6 +41,8 @@ public class MybottlesActivity extends BaseActivity implements OnClickListener,A
     private SwipeRefreshLayout swipeRefreshLayout;
     public static JSONArray m_bottlesListJson; //我的钢瓶列表
 
+    private String m_userId;
+
     private Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
@@ -88,6 +90,12 @@ public class MybottlesActivity extends BaseActivity implements OnClickListener,A
                 refleshVaildBottles();
             }
         });
+
+        Bundle bundle = new Bundle();
+        bundle = this.getIntent().getExtras();
+        m_userId = bundle.getString("userId");
+
+
         refleshVaildBottles();
     }
 
@@ -100,21 +108,15 @@ public class MybottlesActivity extends BaseActivity implements OnClickListener,A
     }
 
     public void refleshVaildBottles() {
-        AppContext appContext = (AppContext) getApplicationContext();
-        User user = appContext.getUser();
-        if (user == null) {
-            Toast.makeText(MybottlesActivity.this, "请先登录!", Toast.LENGTH_LONG).show();
-            return;
-        }
         // get请求
         NetRequestConstant nrc = new NetRequestConstant();
         nrc.setType(HttpRequestType.GET);
 
-        NetRequestConstant.requestUrl = NetUrlConstant.GASCYLINDERURL;
-        NetRequestConstant.context = this;
+        nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
+        nrc.context = this;
         Map<String, Object> params = new HashMap<String, Object>();
-        params.put("liableUserId",user.getUsername() );//责任人是当前用户
-        NetRequestConstant.setParams(params);
+        params.put("liableUserId",m_userId);//责任人是当前用户
+        nrc.setParams(params);
         getServer(new Netcallback() {
             public void preccess(Object res, boolean flag) {
                 if(flag){

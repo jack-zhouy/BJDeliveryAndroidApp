@@ -8,10 +8,10 @@ import android.content.Context;
 
 public class NetRequestConstant {
 
-	public static Context context;
-	public static String requestUrl;
-	public static Map<String, Object> body;
-	public static Map<String, Object> params;
+	public  Context context;
+	public  String requestUrl;
+	public  Map<String, Object> body;
+	public  Map<String, Object> params;
 
 	private HttpRequestType type;
 
@@ -23,12 +23,12 @@ public class NetRequestConstant {
 		this.type = type;
 	}
 	
-	public static void setBody(Map body){
-		NetRequestConstant.body = body;
+	public  void setBody(Map body){
+		this.body = body;
 	}
 
-	public static void setParams(Map params){
-		NetRequestConstant.params = params;
+	public  void setParams(Map params){
+		this.params = params;
 	}
 
 	

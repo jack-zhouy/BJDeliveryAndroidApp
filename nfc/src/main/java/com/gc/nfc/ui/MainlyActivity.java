@@ -5,10 +5,15 @@ import com.gc.nfc.app.AppContext;
 import com.gc.nfc.receiver.LocationReceiver;
 
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.app.TabActivity;
 import android.content.Intent;
+import android.provider.Settings;
 import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -17,7 +22,11 @@ import android.widget.LinearLayout;
 import android.widget.TabHost;
 import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.gc.nfc.utils.LocationUtils;
+import com.gc.nfc.utils.AmapLocationUtils;
+import android.view.KeyEvent;
 
 public class MainlyActivity extends TabActivity implements OnClickListener {
 
@@ -38,6 +47,9 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	private LinearLayout linearlayout_myorders;
 	private LinearLayout linearlayout_mine;
 	private LinearLayout linearlayout_more;
+
+	// 用来计算返回键的点击间隔时间
+	private long exitTime = 0;
 
 
 	public void onCreate(Bundle savedInstanceState) {
@@ -65,7 +77,14 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 			}
 		}
 		//开启定位任务
-		LocationReceiver.startLocation(this);
+		isOpenGPS();
+		//开启定位
+		AmapLocationUtils amapLocationUtils = new AmapLocationUtils(this);
+
+//		LocationUtils.setInstance(this);
+//		LocationUtils.isOpenGPS();
+//		LocationUtils.getStatusListener();
+//		LocationReceiver.startLocation(this);
 	}
 
 	public void initView(){
@@ -130,44 +149,44 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 
 	public void onClick(View v) {
 		switch (v.getId()) {
-		case R.id.linearlayout_vaildorders:
-		case R.id.img_vaildorders:
-			host.setCurrentTabByTag(VALIDORDERS_STRING);
-			img_validorders.setBackgroundResource(R.drawable.ic_menu_deal_on);
-			text_validorders.setTextColor(getResources().getColor(R.color.green));
-			img_myorders.setBackgroundResource(R.drawable.ic_menu_poi_off);
-			text_myorders.setTextColor(getResources().getColor(R.color.textgray));
-			img_mine.setBackgroundResource(R.drawable.ic_menu_user_off);
-			text_mine.setTextColor(getResources().getColor(R.color.textgray));
-			img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
-			text_more.setTextColor(getResources().getColor(R.color.textgray));
-			break;
+			case R.id.linearlayout_vaildorders:
+			case R.id.img_vaildorders:
+				host.setCurrentTabByTag(VALIDORDERS_STRING);
+				img_validorders.setBackgroundResource(R.drawable.ic_menu_deal_on);
+				text_validorders.setTextColor(getResources().getColor(R.color.green));
+				img_myorders.setBackgroundResource(R.drawable.ic_menu_poi_off);
+				text_myorders.setTextColor(getResources().getColor(R.color.textgray));
+				img_mine.setBackgroundResource(R.drawable.ic_menu_user_off);
+				text_mine.setTextColor(getResources().getColor(R.color.textgray));
+				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
+				text_more.setTextColor(getResources().getColor(R.color.textgray));
+				break;
 //
-		case R.id.linearlayout_myorders:
-		case R.id.img_myorders:
-			host.setCurrentTabByTag(MYORDERS_STRING);
-			img_validorders.setBackgroundResource(R.drawable.ic_menu_deal_off);
-			text_validorders.setTextColor(getResources().getColor(R.color.textgray));
-			img_myorders.setBackgroundResource(R.drawable.ic_menu_poi_on);
-			text_myorders.setTextColor(getResources().getColor(R.color.green));
-			img_mine.setBackgroundResource(R.drawable.ic_menu_user_off);
-			text_mine.setTextColor(getResources().getColor(R.color.textgray));
-			img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
-			text_more.setTextColor(getResources().getColor(R.color.textgray));
-			break;
+			case R.id.linearlayout_myorders:
+			case R.id.img_myorders:
+				host.setCurrentTabByTag(MYORDERS_STRING);
+				img_validorders.setBackgroundResource(R.drawable.ic_menu_deal_off);
+				text_validorders.setTextColor(getResources().getColor(R.color.textgray));
+				img_myorders.setBackgroundResource(R.drawable.ic_menu_poi_on);
+				text_myorders.setTextColor(getResources().getColor(R.color.green));
+				img_mine.setBackgroundResource(R.drawable.ic_menu_user_off);
+				text_mine.setTextColor(getResources().getColor(R.color.textgray));
+				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
+				text_more.setTextColor(getResources().getColor(R.color.textgray));
+				break;
 
-		case R.id.linearlayout_mine:
-		case R.id.img_mine:
-			host.setCurrentTabByTag(MYSELF_STRING);
-			img_validorders.setBackgroundResource(R.drawable.ic_menu_deal_off);
-			text_validorders.setTextColor(getResources().getColor(R.color.textgray));
-			img_myorders.setBackgroundResource(R.drawable.ic_menu_poi_off);
-			text_myorders.setTextColor(getResources().getColor(R.color.textgray));
-			img_mine.setBackgroundResource(R.drawable.ic_menu_user_on);
-			text_mine.setTextColor(getResources().getColor(R.color.green));
-			img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
-			text_more.setTextColor(getResources().getColor(R.color.textgray));
-			break;
+			case R.id.linearlayout_mine:
+			case R.id.img_mine:
+				host.setCurrentTabByTag(MYSELF_STRING);
+				img_validorders.setBackgroundResource(R.drawable.ic_menu_deal_off);
+				text_validorders.setTextColor(getResources().getColor(R.color.textgray));
+				img_myorders.setBackgroundResource(R.drawable.ic_menu_poi_off);
+				text_myorders.setTextColor(getResources().getColor(R.color.textgray));
+				img_mine.setBackgroundResource(R.drawable.ic_menu_user_on);
+				text_mine.setTextColor(getResources().getColor(R.color.green));
+				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
+				text_more.setTextColor(getResources().getColor(R.color.textgray));
+				break;
 
 //		case R.id.linearlayout_more:
 //		case R.id.img_more:
@@ -182,20 +201,70 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 //			text_more.setTextColor(getResources().getColor(R.color.green));
 //			break;
 
-		default:
-			break;
+			default:
+				break;
 		}
 	}
 
 	private void getScreenDisplay(){
-		 Display display=this.getWindowManager().getDefaultDisplay();
-	     int screenWidth = display.getWidth();
-	     int screenHeight=display.getHeight();
+		Display display=this.getWindowManager().getDefaultDisplay();
+		int screenWidth = display.getWidth();
+		int screenHeight=display.getHeight();
 
-	     AppContext appContext=(AppContext) getApplicationContext();
-	     appContext.setScreenWidth(screenWidth);
-	     appContext.setScreenHeight(screenHeight);
+		AppContext appContext=(AppContext) getApplicationContext();
+		appContext.setScreenWidth(screenWidth);
+		appContext.setScreenHeight(screenHeight);
 	}
+
+	public  void isOpenGPS(){
+		LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		if (!locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)){
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			dialog.setMessage("GPS未打开，本配送程序必须打开!");
+			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+					// 设置完成后返回到原来的界面
+					startActivityForResult(intent,0);
+				}
+			});
+			dialog.show();
+		}
+	}
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		// RESULT_OK，判断另外一个activity已经结束数据输入功能，Standard activity result:
+		// operation succeeded. 默认值是-1
+		if (requestCode == 0) {
+			isOpenGPS();
+		}
+	}
+
+
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK) {
+			exit();
+			return false;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+
+	public void exit() {
+		if ((System.currentTimeMillis() - exitTime) > 2000) {
+			Toast.makeText(getApplicationContext(), "再按一次退出程序",
+					Toast.LENGTH_SHORT).show();
+			exitTime = System.currentTimeMillis();
+		} else {
+			finish();
+			System.exit(0);
+		}
+	}
+
 
 
 }

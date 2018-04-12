@@ -47,6 +47,9 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 				break;
 			case R.id.lL_myBottle:// 我的气瓶
 				intent = new Intent(MineActivity.this, MybottlesActivity.class);
+				Bundle bundle = new Bundle();
+				bundle.putString("userId",user.getUsername());
+				intent.putExtras(bundle);
 				startActivity(intent);
 				break;
 			default:

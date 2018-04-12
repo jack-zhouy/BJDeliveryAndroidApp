@@ -129,11 +129,11 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
         NetRequestConstant nrc = new NetRequestConstant();
         nrc.setType(HttpRequestType.GET);
 
-        NetRequestConstant.requestUrl = NetUrlConstant.TASKORDERSURL+'/'+user.getUsername();
-        NetRequestConstant.context = this;
+        nrc.requestUrl = NetUrlConstant.TASKORDERSURL+'/'+user.getUsername();
+        nrc.context = this;
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("orderStatus", 1);//待派送
-        NetRequestConstant.setParams(params);
+        nrc.setParams(params);
         getServer(new Netcallback() {
             public void preccess(Object res, boolean flag) {
                 if(flag){

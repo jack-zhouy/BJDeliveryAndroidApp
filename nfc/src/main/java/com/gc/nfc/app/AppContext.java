@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import com.amap.api.maps.model.LatLng;
 import com.gc.nfc.domain.User;
 
 import android.app.Application;
@@ -14,6 +15,7 @@ import android.content.SharedPreferences.Editor;
 
 public class AppContext extends Application {
 	private User user;
+	private LatLng location;
 	private int screenWidth;
 	private int screenHeight;
 	private SharedPreferences preferences;
@@ -60,6 +62,14 @@ public class AppContext extends Application {
 		editor.putString("username", user.getUsername());
 		editor.putString("password", user.getPassword());
 		editor.commit();
+	}
+
+	public LatLng getLocation() {
+		return location;
+	}
+
+	public void setLocation(LatLng location) {
+		this.location = location;
 	}
 
 }

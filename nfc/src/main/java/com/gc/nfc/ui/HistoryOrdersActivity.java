@@ -124,12 +124,12 @@ public class HistoryOrdersActivity extends BaseActivity implements OnClickListen
         NetRequestConstant nrc = new NetRequestConstant();
         nrc.setType(HttpRequestType.GET);
 
-        NetRequestConstant.requestUrl = NetUrlConstant.ORDERURL;
-        NetRequestConstant.context = this;
+        nrc.requestUrl = NetUrlConstant.ORDERURL;
+        nrc.context = this;
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("dispatcherId",user.getUsername() );//待派送
         params.put("orderBy","id desc" );//按照时间逆序排列
-        NetRequestConstant.setParams(params);
+        nrc.setParams(params);
         getServer(new Netcallback() {
             public void preccess(Object res, boolean flag) {
                 if(flag){
