@@ -4,12 +4,16 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.MifareUltralight;
+import android.nfc.tech.Ndef;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Parcelable;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -52,6 +56,7 @@ import java.net.MalformedURLException;
 import java.nio.charset.Charset;
 import java.nio.charset.MalformedInputException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -83,61 +88,48 @@ import java.util.Set;
 import java.util.Random;
 
 
-public class OrderDealActivity extends BaseActivity implements OnClickListener, INaviInfoCallback,AbsListView.OnScrollListener  {
-	private final String m_testValidKP[] = {"05","06"};
-	private final String m_testValidZP[] = {"08","11"};
-	private int testValidKPIndex = 0;
-	private int testValidZPIndex = 0;
+public class OrderDealActivity extends BaseActivity implements OnClickListener,AbsListView.OnScrollListener  {
 
-
-	private NfcAdapter mNfcAdapter;
-	private PendingIntent mPendingIntent;
+	AlertDialog m_alertDialogTicketSelect;//气票选择窗口
+	AlertDialog m_alertDialogTicketCoupon;//优惠券选择窗口
 
 	private TextView m_textViewPayStatus;//支付状态
 	private Button m_buttonNext;//下一步
-	private ListView m_listView_kp;// 空瓶号列表
-	private ListView m_listView_zp;// 重瓶号列表
-	private  RadioGroup  radioGroup_nfc=null;
-	private  RadioButton  radioButton_kp,radioButton_zp;//nfc空瓶/重瓶录入
+	private ListView m_listView_ticket;// 气票列表
+	private ListView m_listView_coupon;// 优惠券列表
+
 	private Spinner m_spinnerPaytype; //支付类型
 	private TextView m_textViewPaytype; //支付类型
 	private TextView m_textViewTotalFee; //商品总价
 
-	private ImageView m_imageViewKPEye; //有效空瓶查看
-	private ImageView m_imageViewZPEye; //有效重瓶查看
+	private ImageView m_imageViewTicketSelect; //气票查看
+	private ImageView m_imageViewCouponSelect; //优惠券查看
 
 
 
 	private SwipeRefreshLayout swipeRefreshLayout;
 
 	private AppContext appContext;
-
-
 	private JSONObject m_OrderJson;//订单详情
-
 	private String m_orderId;//订单号
 	private String m_taskId;//任务订单详情
 	private int m_orderStatus;//订单状态
-	private User m_user;//当前登录用户
 	private LatLng m_recvLocation;//收货地址经纬度
 	private String m_businessKey;//订单号
 	private String m_recvAddr;//收获地址
 	private String m_totalFee;//商品总价
+	private JSONObject m_curUserSettlementType;//结算类型
 
 	private String m_curUserId;//该订单用户
-	private JSONObject m_curUserSettlementType;//结算类型
 	private User m_deliveryUser;//配送工
-	private Map<String,JSONObject> m_userBottlesMap;//当前订单用户的钢瓶
-	private Map<String,JSONObject> m_myBottlesMap;//当前配送工的钢瓶
-
-	private List<String> m_BottlesListKP;//重瓶表
-	private List<String> m_BottlesListZP;//空瓶表
-
-
 	public static String m_orderPayStatus;//支付状态
 
+	private List<JSONObject> m_TicketList;//气票链表
+	private List<JSONObject> m_CouponList;//优惠券链表
 
-	private int m_selected_nfc_model;//0--空瓶 1--重瓶
+	private JSONArray m_ValidTicketJsonArray;//有效的气票json数组
+	private JSONArray m_ValidCouponJsonArray;//有效的优惠券json数组
+
 
 	private Handler handler = new Handler(){
 		@Override
@@ -166,52 +158,6 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 
 	}
 
-	@Override
-	protected void onStart() {
-		super.onStart();
-		mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
-		if(mNfcAdapter!=null&& mNfcAdapter.isEnabled()){
-
-		}else{
-
-			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-			dialog.setMessage("NFC 初始化失败！，本配送程序必须打开!");
-			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					Intent intent = new Intent(Settings.ACTION_NFC_SETTINGS);
-					// 设置完成后返回到原来的界面
-					startActivityForResult(intent,0);
-				}
-			});
-			dialog.show();
-		}
-		//一旦截获NFC消息，就会通过PendingIntent调用窗口
-		mPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, getClass()), 0);
-	}
-
-	/**
-	 * 获得焦点，按钮可以点击
-	 */
-	@Override
-	public void onResume() {
-		super.onResume();
-		//设置处理优于所有其他NFC的处理
-		if (mNfcAdapter != null)
-			mNfcAdapter.enableForegroundDispatch(this, mPendingIntent, null, null);
-	}
-
-	/**
-	 * 暂停Activity，界面获取焦点，按钮可以点击
-	 */
-	@Override
-	public void onPause() {
-		super.onPause();
-		//恢复默认状态
-		if (mNfcAdapter != null)
-			mNfcAdapter.disableForegroundDispatch(this);
-	}
 
 
 	protected void onCreate(Bundle savedInstanceState) {
@@ -222,11 +168,6 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 	void init() {
 		try {
 			setContentView(R.layout.activity_order_deal);
-
-			//当前登录用户
-			appContext = (AppContext) getApplicationContext();
-			m_user = appContext.getUser();
-
 			//获取传过来的任务订单参数
 			Bundle bundle = new Bundle();
 			bundle = this.getIntent().getExtras();
@@ -238,19 +179,17 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 			//控件初始化
 			m_buttonNext = (Button) findViewById(R.id.button_next);//下一步按钮
 			m_textViewPayStatus = (TextView) findViewById(R.id.textview_payStatus);
-			m_listView_kp = (ListView) findViewById(R.id.listview_kp);
-			m_listView_zp = (ListView) findViewById(R.id.listview_zp);
-			radioGroup_nfc=(RadioGroup)findViewById(R.id.radioGroup_nfc_id);
-			radioButton_kp=(RadioButton)findViewById(R.id.radioButton_kp_id);
-			radioButton_zp=(RadioButton)findViewById(R.id.radioButton_zp_id);
+			m_listView_ticket = (ListView) findViewById(R.id.listview_ticket);
+			m_listView_coupon = (ListView) findViewById(R.id.listview_coupon);
+
 			m_spinnerPaytype = (Spinner) findViewById(R.id.spinner_payType);
 			m_textViewPaytype = (TextView) findViewById(R.id.textview_payType);
 			m_textViewTotalFee = (TextView) findViewById(R.id.textview_totalFee);
-			m_imageViewKPEye = (ImageView) findViewById(R.id.imageView_KPEYE);
-			m_imageViewZPEye = (ImageView) findViewById(R.id.imageView_ZPEYE);
+			m_imageViewTicketSelect = (ImageView) findViewById(R.id.imageView_ticketSelect);
+			m_imageViewCouponSelect = (ImageView) findViewById(R.id.imageView_couponSelect);
 
-			m_imageViewZPEye.setOnClickListener(this);
-			m_imageViewKPEye.setOnClickListener(this);
+			m_imageViewTicketSelect.setOnClickListener(this);
+			m_imageViewCouponSelect.setOnClickListener(this);
 
 			//获取支付状态
 			JSONObject payStatusJson = m_OrderJson.getJSONObject("payStatus");
@@ -275,17 +214,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 				}
 			});
 
-
-
 			m_buttonNext.setOnClickListener(this);
-			radioGroup_nfc.setOnCheckedChangeListener(listen);
-
-			radioGroup_nfc.check(radioButton_kp.getId());//默认是空瓶
-			m_selected_nfc_model = 0;
-
 			m_textViewPaytype.setVisibility(View.INVISIBLE);
-
-
 			m_spinnerPaytype.setOnItemSelectedListener(new OnItemSelectedListener() {
 				@Override
 				public void onItemSelected(AdapterView<?> parent, View view,
@@ -305,28 +235,22 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 				}
 			});
 
-			//数据结构初始化
-			m_userBottlesMap = new HashMap<String, JSONObject>();
-			m_myBottlesMap = new HashMap<String, JSONObject>();
-			m_BottlesListKP = new ArrayList<String>();
-			m_BottlesListZP = new ArrayList<String>();
-
 			//获取当前配送工
 			appContext = (AppContext) getApplicationContext();
 			m_deliveryUser = appContext.getUser();
 
 			//初始化两个LISTVIEW的点击事件
-			m_listView_kp.setOnItemLongClickListener(new OnItemLongClickListener() {
+			m_listView_ticket.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					deleteKP(position);
+					deleteTicket(position);
 					return true;
 				}
 			});
-			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
+			m_listView_coupon.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					deleteZP(position);
+					deleteCoupon(position);
 					return true;
 				}
 			});
@@ -339,8 +263,6 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 			setOrderDetailsInfo();
 			setOrderAppendInfo();
 			getRecvLocation();
-			getUserBottles();//获取用户名下的钢瓶号
-			getMyBottles();//获取配送工名下的钢瓶号
 
 			//如果结算类型不是普通用户，就隐藏支付方式选择
 			if(!m_curUserSettlementType.get("code").toString().equals("00001")){
@@ -348,7 +270,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 				m_textViewPaytype.setVisibility(View.VISIBLE);
 				m_textViewPaytype.setText(m_curUserSettlementType.get("name").toString());
 			}
-
+			//获取用户有效的气票
+			getCustomerTickets();
 
 
 		}catch (JSONException e){
@@ -383,38 +306,19 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 				}
 			});
 
-
 			dialog.show();
-
 			Window dialogWindow = dialog.getWindow();//获取window对象
 			dialogWindow.setGravity(Gravity.CENTER);//设置对话框位置
 			dialogWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);//设置横向全屏
 		}
 		catch (MalformedURLException e){
-
 		}
 		catch (IOException e){
-
 		}
 
 
 	}
 
-	private OnCheckedChangeListener  listen=new OnCheckedChangeListener() {
-		@Override
-		public void onCheckedChanged(RadioGroup group, int checkedId) {
-			int id= group.getCheckedRadioButtonId();
-			switch (group.getCheckedRadioButtonId()) {
-				case R.id.radioButton_kp_id:
-					m_selected_nfc_model = 0;
-					break;
-				case R.id.radioButton_zp_id:
-					m_selected_nfc_model = 1;
-					break;
-				default:
-					break;
-			}
-		}};
 
 	//动态设置ListView的高度
 	private void setListViewHeightBasedOnChildren(ListView listView) {
@@ -525,147 +429,19 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				if(m_user==null){
-					Toast.makeText(OrderDealActivity.this, "未登录！", Toast.LENGTH_LONG).show();
-					return;
-				}
-				// get请求
-				NetRequestConstant nrc = new NetRequestConstant();
-				nrc.setType(HttpRequestType.GET);
-				nrc.requestUrl = NetUrlConstant.TASKORDERDEALURL+"/"+m_taskId;
-				nrc.context = this;
-				Map<String, Object> params = new HashMap<String, Object>();
-				params.put("businessKey", m_businessKey);
-				params.put("candiUser", m_user.getUsername());
-				params.put("orderStatus", 1);
-				nrc.setParams(params);
-
-				getServer(new Netcallback() {
-					public void preccess(Object res, boolean flag) {
-						if(flag){
-							HttpResponse response=(HttpResponse)res;
-							if(response!=null){
-								if(response.getStatusLine().getStatusCode()==200){
-									Toast toast = Toast.makeText(OrderDealActivity.this, "抢单成功！", Toast.LENGTH_LONG);
-									toast.setGravity(Gravity.CENTER, 0, 0);
-									toast.show();
-
-									MediaPlayer music = MediaPlayer.create(OrderDealActivity.this, R.raw.get_order);
-									music.start();
-									Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
-									Bundle bundle = new Bundle();
-
-									bundle.putInt("switchTab", 1);//tab跳转到我的订单
-									intent.putExtras(bundle);
-
-									startActivity(intent);
-									finish();
-
-
-								}else{
-									Toast.makeText(OrderDealActivity.this, "抢单失败", Toast.LENGTH_LONG).show();
-								}
-							}else {
-								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}
-						} else {
-							Toast.makeText(OrderDealActivity.this, "网络未连接！",
-									Toast.LENGTH_LONG).show();
-						}
-					}
-				}, nrc);
-
 				break;
-			case R.id.imageView_KPEYE:// 用户的气瓶
-				Intent intentKP = new Intent();
-				Bundle bundleKP = new Bundle();
-				bundleKP.putString("userId", m_curUserId);
-				intentKP.setClass(OrderDealActivity.this, MybottlesActivity.class);
-				intentKP.putExtras(bundleKP);
-				startActivity(intentKP);
+			case R.id.imageView_ticketSelect:// 用户的气票
+				showTicketSelectAlertDialog(v);
 				break;
-			case R.id.imageView_ZPEYE://配送工的气瓶
-				Intent intentZP = new Intent();
-				Bundle bundleZP = new Bundle();
-				bundleZP.putString("userId", m_deliveryUser.getUsername());
-				intentZP.setClass(OrderDealActivity.this, MybottlesActivity.class);
-				intentZP.putExtras(bundleZP);
-				startActivity(intentZP);
+			case R.id.imageView_couponSelect://用户的优惠券
+
 				break;
 			default:
 				break;
 		}
 
 	}
-	private void switchNavBar(){
-		//获取当前位置
-		AppContext appContext = (AppContext) getApplicationContext();
-		LatLng startP = appContext.getLocation();
 
-		LatLng endP = m_recvLocation;
-
-		AmapNaviPage.getInstance().showRouteActivity(getApplicationContext(), new AmapNaviParams(new Poi("当前位置", startP, ""), null, new Poi(m_recvAddr, endP, ""), AmapNaviType.DRIVER), OrderDealActivity.this);
-		AMapNavi mAMapNavi = null;
-		mAMapNavi = AMapNavi.getInstance(this);
-		mAMapNavi.setUseInnerVoice(true);
-	}
-
-	@Override
-	public void onInitNaviFailure() {
-
-	}
-
-	@Override
-	public void onLocationChange(AMapNaviLocation aMapNaviLocation) {
-
-	}
-
-	@Override
-	public void onArriveDestination(boolean b) {
-
-	}
-
-	@Override
-	public void onStartNavi(int i) {
-
-	}
-
-	@Override
-	public void onCalculateRouteSuccess(int[] ints) {
-
-	}
-
-	@Override
-	public void onCalculateRouteFailure(int i) {
-
-	}
-
-	@Override
-	public void onGetNavigationText(String s) {
-
-	}
-
-	@Override
-	public void onStopSpeaking() {
-
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-
-	}
-
-	@Override
-	public void onReCalculateRoute(int i) {
-
-	}
-
-	@Override
-	public void onExitPage(int i) {
-
-	}
 
 	//刷新支付状态
 	public void refleshPayStatus() {
@@ -716,18 +492,142 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 		handler.sendEmptyMessage(0x101);//通过handler发送一个更新数据的标记
 	}
 
+	//更新气票列表
+	private void refleshTicketList(){
+		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
 
-	//获取该用户名下的瓶子
-	public void getUserBottles() {
+		for(int i=0;i<m_TicketList.size(); i++){
+			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+			bottleInfo.put("bottleCode", m_TicketList.get(i));
+			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+		}
+		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
+		SimpleAdapter simpleAdapter = new SimpleAdapter(
+				OrderDealActivity.this,/*传入一个上下文作为参数*/
+				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
+				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
+				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number}) ;
 
+		m_listView_ticket.setAdapter(simpleAdapter);
+		setListViewHeightBasedOnChildren(m_listView_ticket);
+	}
+
+	//更新优惠券列表
+	private void refleshCouponList(){
+		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
+
+		for(int i=0;i<m_CouponList.size(); i++){
+			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+			bottleInfo.put("bottleCode", m_CouponList.get(i));
+			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+		}
+		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
+		SimpleAdapter simpleAdapter = new SimpleAdapter(
+				OrderDealActivity.this,/*传入一个上下文作为参数*/
+				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
+				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
+				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number}) ;
+		m_listView_coupon.setAdapter(simpleAdapter);
+		setListViewHeightBasedOnChildren(m_listView_coupon);
+	}
+
+	//气票删除函数
+	private void deleteTicket(final int position){
+		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+		dialog.setMessage("取消使用气票:  "+m_TicketList.get(position)+"   ?");
+		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				m_TicketList.remove(position);
+				refleshTicketList();
+			}
+		});
+		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+			}
+		});
+		dialog.show();
+	}
+
+	//优惠券删除函数
+	private void deleteCoupon(final int position){
+		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+		dialog.setMessage("取消使用优惠券:  "+m_CouponList.get(position)+"   ?");
+		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				m_CouponList.remove(position);
+				refleshCouponList();
+			}
+		});
+		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+			}
+		});
+		dialog.show();
+	}
+
+
+	//气票选择窗口
+	public void showTicketSelectAlertDialog(View view){
+
+		final String[] items = {"Struts2","Spring","Hibernate","Mybatis","Spring MVC"};
+		// 创建一个AlertDialog建造者
+		AlertDialog.Builder alertDialogBuilder= new AlertDialog.Builder(this);
+		// 设置标题
+		alertDialogBuilder.setTitle("气票选择窗口");
+		// 参数介绍
+		// 第一个参数：弹出框的信息集合，一般为字符串集合
+		// 第二个参数：被默认选中的，一个布尔类型的数组
+		// 第三个参数：勾选事件监听
+		alertDialogBuilder.setMultiChoiceItems(items, null, new DialogInterface.OnMultiChoiceClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+
+			}
+		});
+		alertDialogBuilder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface arg0, int arg1) {
+				//TODO 业务逻辑代码
+
+				// 关闭提示框
+				m_alertDialogTicketSelect.dismiss();
+			}
+		});
+		alertDialogBuilder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface arg0, int arg1) {
+				// TODO 业务逻辑代码
+				// 关闭提示框
+				m_alertDialogTicketSelect.dismiss();
+			}
+		});
+		m_alertDialogTicketSelect = alertDialogBuilder.create();
+		m_alertDialogTicketSelect.show();
+	}
+
+	//获取用户名下的气票
+	public void getCustomerTickets() {
 		// get请求
 		NetRequestConstant nrc = new NetRequestConstant();
 		nrc.setType(HttpRequestType.GET);
 
-		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
+		nrc.requestUrl = NetUrlConstant.TICKETURL;
 		nrc.context = this;
 		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("liableUserId",m_curUserId );//用户号
+		params.put("customerUserId",m_curUserId);//当前客户
+		params.put("useStatus",0);//未使用
 		nrc.setParams(params);
 		getServer(new Netcallback() {
 			public void preccess(Object res, boolean flag) {
@@ -736,15 +636,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==200){
 							try {
-								m_userBottlesMap.clear();
-								JSONObject bottlesJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-								JSONArray bottlesListJson = bottlesJson.getJSONArray("items");
-
-								for(int i=0;i<bottlesListJson.length(); i++){
-									JSONObject bottleJson = bottlesListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
-									String bottleCode = bottleJson.get("number").toString();//钢瓶编号
-									m_userBottlesMap.put(bottleCode, bottleJson);
-								}
+								JSONObject TicketJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								m_ValidTicketJsonArray = TicketJson.getJSONArray("items");
 
 							}catch (IOException e){
 								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
@@ -765,244 +658,5 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener, 
 			}
 		}, nrc);
 	}
-
-	//获取配送工名下的瓶子
-	public void getMyBottles() {
-
-		AppContext appContext = (AppContext) getApplicationContext();
-		User user = appContext.getUser();
-		if (user == null) {
-			Toast.makeText(OrderDealActivity.this, "请先登录!", Toast.LENGTH_LONG).show();
-			return;
-		}
-		// get请求
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.GET);
-
-		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("liableUserId",user.getUsername() );//责任人是当前用户
-		nrc.setParams(params);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-							try {
-								m_myBottlesMap.clear();
-								JSONObject bottlesJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-								JSONArray bottlesListJson = bottlesJson.getJSONArray("items");
-
-								for(int i=0;i<bottlesListJson.length(); i++){
-									JSONObject bottleJson = bottlesListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
-									String bottleCode = bottleJson.get("number").toString();//钢瓶编号
-									m_myBottlesMap.put(bottleCode, bottleJson);
-								}
-
-							}catch (IOException e){
-								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}catch (JSONException e) {
-								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}
-						}
-					}else {
-						Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
-								Toast.LENGTH_LONG).show();
-					}
-				} else {
-					Toast.makeText(OrderDealActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-				}
-			}
-		}, nrc);
-	}
-
-	//读标签
-	public void onNewIntent(Intent intent) {
-		Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-		String[] techList = tag.getTechList();
-		boolean haveMifareUltralight = false;
-		for (String tech : techList) {
-			if (tech.indexOf("MifareUltralight") >= 0) {
-				haveMifareUltralight = true;
-				break;
-			}
-		}
-//		if (!haveMifareUltralight) {
-//			Toast.makeText(this, "不支持MifareUltralight数据格式", Toast.LENGTH_SHORT).show();
-//			return;
-//		}
-		//String bottleCode = readTag(tag);//NFC中的钢瓶编码
-		//测试代码
-		String bottleCode;
-		if (!haveMifareUltralight) {
-			Toast.makeText(this, "不支持MifareUltralight数据格式", Toast.LENGTH_SHORT).show();
-			if(m_selected_nfc_model==0){
-				if(testValidKPIndex==2){
-					bottleCode = m_testValidKP[1];
-				}else{
-					bottleCode = m_testValidKP[testValidKPIndex++];
-				}
-
-
-			}else{
-				if(testValidZPIndex==2){
-					bottleCode = m_testValidZP[1];
-				}else{
-					bottleCode = m_testValidZP[testValidZPIndex++];
-				}
-			}
-
-		}else{
-			bottleCode = readTag(tag);//NFC中的钢瓶编码
-		}
-		//////////////////////////////////////
-
-		if(m_selected_nfc_model==0){//空瓶录入模式
-			if(m_userBottlesMap.containsKey(bottleCode)){
-				boolean contained = false;
-				for(int i=0; i<m_BottlesListKP.size();i++){
-					if(m_BottlesListKP.get(i).equals(bottleCode)){
-						contained = true;
-						break;
-					}
-				}
-				if(!contained){//第一次扫
-					m_BottlesListKP.add(bottleCode);
-					refleshBottlesListKP();
-				}
-			}else{//非法钢瓶
-				Toast.makeText(OrderDealActivity.this, "空瓶录入：钢瓶号 "+bottleCode+"  非法！",
-						Toast.LENGTH_LONG).show();
-			}
-
-		}else if(m_selected_nfc_model==1){//重瓶录入模式
-			if(m_myBottlesMap.containsKey(bottleCode)){
-				boolean contained = false;
-				for(int i=0; i<m_BottlesListZP.size();i++){
-					if(m_BottlesListZP.get(i).equals(bottleCode)){
-						contained = true;
-						break;
-					}
-				}
-				if(!contained){//第一次扫
-					m_BottlesListZP.add(bottleCode);
-					refleshBottlesListZP();
-				}
-			}else{//非法钢瓶
-				Toast.makeText(OrderDealActivity.this, "重瓶录入：钢瓶号 "+bottleCode+"  非法！",
-						Toast.LENGTH_LONG).show();
-			}
-		}
-
-
-	}
-
-	//读标签
-	public String readTag(Tag tag) {
-		MifareUltralight ultralight = MifareUltralight.get(tag);
-		try {
-			ultralight.connect();
-			byte[] data = ultralight.readPages(4);
-			return new String(data, Charset.forName("GB2312"));
-		} catch (Exception e) {
-		} finally {
-			try {
-				ultralight.close();
-			} catch (Exception e) {
-			}
-		}
-		return null;
-	}
-
-	//NFC更新空瓶表
-	private void refleshBottlesListKP(){
-		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
-
-		for(int i=0;i<m_BottlesListKP.size(); i++){
-			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_BottlesListKP.get(i));
-			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
-		}
-		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
-		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				OrderDealActivity.this,/*传入一个上下文作为参数*/
-				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
-				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
-
-		m_listView_kp.setAdapter(simpleAdapter);
-		setListViewHeightBasedOnChildren(m_listView_kp);
-	}
-
-	//NFC更新重瓶表
-	private void refleshBottlesListZP(){
-		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
-
-		for(int i=0;i<m_BottlesListZP.size(); i++){
-			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_BottlesListZP.get(i));
-			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
-		}
-		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
-		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				OrderDealActivity.this,/*传入一个上下文作为参数*/
-				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
-				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
-
-		m_listView_zp.setAdapter(simpleAdapter);
-		setListViewHeightBasedOnChildren(m_listView_zp);
-	}
-
-	//空瓶删除函数
-	private void deleteKP(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("删除钢瓶:  "+m_BottlesListKP.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_BottlesListKP.remove(position);
-				refleshBottlesListKP();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
-	}
-
-	//空瓶删除函数
-	private void deleteZP(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("删除钢瓶:  "+m_BottlesListZP.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_BottlesListZP.remove(position);
-				refleshBottlesListZP();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
-	}
-
-
 
 }

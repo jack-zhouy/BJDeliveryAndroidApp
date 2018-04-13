@@ -328,7 +328,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 		bundle.putString("taskId", m_taskId);
 		bundle.putString("order", m_OrderJson.toString());
 		bundle.putString("businessKey", m_businessKey);//订单号
-		intent.setClass(OrderDetailActivity.this, OrderDealActivity.class);
+		intent.setClass(OrderDetailActivity.this, BottleExchangeActivity.class);
 		intent.putExtras(bundle);
 		startActivity(intent);
 	}

@@ -9,4 +9,7 @@ public class NetUrlConstant {
 
 	public static final String PAYQRCODEURL = "http://120.78.241.67/api/pay/scan";  //微信支付二维码接口
 
+	public static final String TICKETURL = "http://120.78.241.67//api/Ticket";  //气票查询接口
+	public static final String COUPONURL = "http://120.78.241.67//api/Coupon";  //优惠券查询接口
+
 }
