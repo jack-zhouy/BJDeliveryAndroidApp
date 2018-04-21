@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#39829A"
+    android:background="#7adfb8"
     tools:context=".MainActivity" >
 
     <include
@@ -15,18 +15,18 @@
         android:layout_below="@+id/main_title"
         android:orientation="vertical" >
 
-        <!--<ImageView-->
-            <!--android:layout_width="55dip"-->
-            <!--android:layout_height="55dip"-->
-            <!--android:layout_gravity="center_horizontal"-->
-            <!--android:src="@drawable/icon_logo" />-->
+        <ImageView
+            android:layout_width="55dip"
+            android:layout_height="55dip"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/icon_logo" />
 
         <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dip"
             android:gravity="center"
-            android:text="百江配送"
+            android:text="FIREFLY FOREST"
             android:textColor="#ffffff"
             android:textSize="24sp" />
 
@@ -34,7 +34,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="PANVA"
+            android:text="SHOW YOUR IDEAS"
             android:textColor="#ffffff"
             android:textSize="16sp" />
     </LinearLayout>
@@ -47,7 +47,7 @@
         <include
             android:id="@+id/input_layout"
             android:layout_width="match_parent"
-            android:layout_height="160dip"
+            android:layout_height="130dip"
             layout="@layout/input_layout" />
 
         <include
@@ -59,8 +59,8 @@
 
         <TextView
             android:id="@+id/main_btn_login"
-            android:layout_width="230dip"
-            android:layout_height="40dip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_below="@+id/input_layout"
             android:layout_centerInParent="true"
             android:layout_marginTop="15dip"
@@ -70,7 +70,7 @@
             android:paddingLeft="15dip"
             android:paddingRight="15dip"
             android:paddingTop="2dip"
-            android:text="登录"
+            android:text="Login"
             android:textColor="#ffffff"
             android:textSize="20sp" />
     </RelativeLayout>

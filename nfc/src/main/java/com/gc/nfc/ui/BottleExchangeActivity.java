@@ -73,6 +73,7 @@ import java.util.Map;
 
 
 public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
+	private int m_takeOverCount = 0;//空瓶交接状态
 
 	private NfcAdapter mNfcAdapter;
 	private PendingIntent mPendingIntent;
@@ -216,6 +217,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			getUserBottles();//获取用户名下的钢瓶号
 			getMyBottles();//获取配送工名下的钢瓶号
 
+
 		}catch (JSONException e){
 			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
@@ -277,13 +279,27 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				Intent intent = new Intent();
-				//将传过来的任务订单参数传到下一个页面
-				Bundle bundle = new Bundle();
-				bundle = this.getIntent().getExtras();
-				intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
-				intent.putExtras(bundle);
-				startActivity(intent);
+				bottleTakeOver();
+				try {
+					m_buttonNext.setText("正在提交...");
+					Thread.currentThread().sleep(1000);//阻断2秒
+					if(m_takeOverCount == (m_BottlesListKP.size()+m_BottlesListZP.size())){
+						Intent intent = new Intent();
+						//将传过来的任务订单参数传到下一个页面
+						Bundle bundle = new Bundle();
+						bundle = this.getIntent().getExtras();
+						intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
+						intent.putExtras(bundle);
+						startActivity(intent);
+					}else{
+						Toast.makeText(BottleExchangeActivity.this, "提交超时，请重新提交！",
+								Toast.LENGTH_LONG).show();
+					}
+					m_buttonNext.setText("下一步");
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
 				break;
 			case R.id.imageView_KPEYE:// 用户的气瓶
 				Intent intentKP = new Intent();
@@ -613,4 +629,49 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			throw new IllegalArgumentException();
 		}
 	}
+
+	//钢瓶责任交接
+	public void bottleTakeOver() {
+		//交接空瓶
+		for(int i=0; i<m_BottlesListKP.size(); i++){
+			bottleTakeOverUnit(m_BottlesListKP.get(i), m_curUserId, m_deliveryUser.getUsername(), "6");//空瓶回收
+		}
+		//交接重瓶
+		for(int i=0; i<m_BottlesListZP.size(); i++){
+			bottleTakeOverUnit(m_BottlesListZP.get(i),  m_deliveryUser.getUsername(), m_curUserId,"5");//客户使用
+		}
+	}
+
+	//单个钢瓶交接
+	public void bottleTakeOverUnit(String bottleCode, String srcUserId, String targetUserId, String serviceStatus) {
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.PUT);
+		nrc.requestUrl = NetUrlConstant.BOTTLETAKEOVERURL+"/"+bottleCode;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("srcUserId",srcUserId);//用户号
+		params.put("targetUserId",targetUserId);//用户号
+		params.put("serviceStatus",serviceStatus);//用户号
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							m_takeOverCount++;
+						}
+					}else {
+						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+	}
+
+
 }

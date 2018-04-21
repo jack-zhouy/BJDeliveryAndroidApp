@@ -1,7 +1,12 @@
 package com.gc.nfc.ui;
 
+import com.amap.api.maps.model.LatLng;
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
+import com.gc.nfc.common.NetRequestConstant;
+import com.gc.nfc.common.NetUrlConstant;
+import com.gc.nfc.domain.User;
+import com.gc.nfc.interfaces.Netcallback;
 import com.gc.nfc.receiver.LocationReceiver;
 
 import android.app.AlarmManager;
@@ -10,6 +15,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.app.TabActivity;
 import android.content.Intent;
@@ -26,7 +32,18 @@ import android.widget.Toast;
 
 import com.gc.nfc.utils.LocationUtils;
 import com.gc.nfc.utils.AmapLocationUtils;
+import com.gc.nfc.utils.NetUtil;
+
 import android.view.KeyEvent;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainlyActivity extends TabActivity implements OnClickListener {
 
@@ -264,7 +281,5 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 			System.exit(0);
 		}
 	}
-
-
 
 }

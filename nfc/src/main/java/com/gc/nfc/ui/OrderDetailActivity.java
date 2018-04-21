@@ -194,7 +194,9 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			String strOrderSn = "订单号："+orderJson.get("orderSn").toString();
 			m_textViewOrderSn.setText(strOrderSn);
 
-			String strUserInfo = "用户："+orderJson.get("recvName").toString()+"  |  电话："+orderJson.get("recvPhone").toString();
+			//获取订单用户
+			JSONObject customerJson = orderJson.getJSONObject("customer");
+			String strUserInfo = "用户名："+customerJson.get("userId").toString()+" | 收件人："+orderJson.get("recvName").toString()+"  |  电话："+orderJson.get("recvPhone").toString();
 			m_textViewUserInfo.setText(strUserInfo);
 
 			String strCreateTime = "创建时间："+orderJson.get("createTime").toString();

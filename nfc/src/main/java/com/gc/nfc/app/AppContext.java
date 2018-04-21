@@ -1,24 +1,40 @@
 package com.gc.nfc.app;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
+
 
 import com.amap.api.maps.model.LatLng;
-import com.gc.nfc.domain.User;
 
+import com.gc.nfc.domain.User;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
 
+
 public class AppContext extends Application {
 	private User user;
+	private String groupCode;
+	private String groupName;
 	private LatLng location;
 	private int screenWidth;
 	private int screenHeight;
 	private SharedPreferences preferences;
+
+	public String getGroupCode() {
+		return groupCode;
+	}
+
+	public void setGroupCode(String groupCode) {
+		this.groupCode = groupCode;
+	}
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
+	}
 
 	public int getScreenWidth() {
 		return screenWidth;
@@ -70,6 +86,6 @@ public class AppContext extends Application {
 
 	public void setLocation(LatLng location) {
 		this.location = location;
-	}
 
+	}
 }

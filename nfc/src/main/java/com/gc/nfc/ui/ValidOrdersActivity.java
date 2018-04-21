@@ -164,7 +164,8 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
                                     JSONObject addressJson = order.getJSONObject("recvAddr");
                                     orderInfo.put("address", "地址："+addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString());  //收货地址
                                     orderInfo.put("userInfo", "收货人："+order.get("recvName").toString()+" | "+"电话："+order.get("recvPhone").toString());  //用户信息
-
+                                    String orderStatusDesc[] = {"待接单","派送中","待核单","已结束","已作废"};
+                                    orderInfo.put("orderStatus", orderStatusDesc[Integer.parseInt(order.get("orderStatus").toString())]);
                                     list_map.add(orderInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
                                 }
                                 //2、创建适配器（可以使用外部类的方式、内部类方式等均可）
@@ -172,8 +173,8 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
                                         ValidOrdersActivity.this,/*传入一个上下文作为参数*/
                                         list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
                                         R.layout.order_list_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-                                        new String[]{"createTime", "address", "userInfo"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-                                        new int[]{R.id.items_creatTime,R.id.items_address, R.id.items_useInfo}) ;
+                                        new String[]{"createTime", "address", "userInfo","orderStatus"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+                                        new int[]{R.id.items_creatTime,R.id.items_address, R.id.items_useInfo,  R.id.items_orderStatus}) ;
 //                                {
 //                                    @Override
 //                                    public View getView(int position, View convertView, ViewGroup parent) {
@@ -217,6 +218,7 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
                 }
             }
         }, nrc);
+
         handler.sendEmptyMessage(0x101);//通过handler发送一个更新数据的标记
     }
     @Override

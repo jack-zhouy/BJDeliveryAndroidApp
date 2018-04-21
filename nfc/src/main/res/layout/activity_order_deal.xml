@@ -143,17 +143,20 @@
                     android:layout_marginTop="5dp"
                     android:background="@color/textgray" />
                 <LinearLayout
+                    android:id="@+id/LinearLayout_ticketSelect"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:visibility="visible">
 
                     <RelativeLayout
+
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="10dp"
                         android:orientation="horizontal">
                         <TextView
+                            android:id="@+id/textView_ticketSelect"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:layout_marginTop="10dp"
@@ -185,6 +188,7 @@
                     android:layout_marginTop="5dp"
                     android:background="@color/textgray" />
                 <LinearLayout
+                    android:id="@+id/LinearLayout_couponSelect"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"

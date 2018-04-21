@@ -9,6 +9,7 @@ import com.amap.api.location.AMapLocationListener;
 import com.amap.api.location.AMapLocationQualityReport;
 import com.amap.api.maps.model.LatLng;
 import com.gc.nfc.app.AppContext;
+import com.gc.nfc.common.NetUrlConstant;
 import com.gc.nfc.domain.User;
 
 import android.content.Context;
@@ -24,6 +25,27 @@ import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 高精度定位模式功能演示
@@ -144,6 +166,8 @@ public class AmapLocationUtils{
 				LatLng myLocation = new LatLng(location.getLatitude(), location.getLongitude());
 				appContext.setLocation(myLocation);
 
+				reportLocation(myLocation);//上报定位数据
+
 			} else {
 				//Toast.makeText(mcontext, "定位失败",Toast.LENGTH_SHORT).show();
 
@@ -222,6 +246,55 @@ public class AmapLocationUtils{
 			locationClient.onDestroy();
 			locationClient = null;
 			locationOption = null;
+		}
+	}
+
+
+	private void reportLocation(LatLng location){
+		AppContext appContext = (AppContext) mcontext;
+		String result=null;
+		try {
+			HttpParams httpParams=new BasicHttpParams();
+			HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
+			HttpConnectionParams.setSoTimeout(httpParams, 5000);
+
+			//创建一个HttpClient实例
+			DefaultHttpClient httpClient=new DefaultHttpClient(httpParams);
+			//建立HttpPost对象
+			String requestUrl = NetUrlConstant.POSITIONURL;
+
+			requestUrl = requestUrl + "?" + "userId="+ appContext.getUser().getUsername();
+
+			HttpPost httpRequest=new HttpPost(requestUrl);
+			httpRequest.setHeader("Content-Type", "application/json");
+
+			//发送请求的参数
+			JSONObject bodyJson = new JSONObject();  ;
+			bodyJson.put("longitude", location.longitude);
+			bodyJson.put("latitude", location.latitude);
+			StringEntity stringEntity = new StringEntity(bodyJson.toString());
+			//stringEntity.setContentEncoding("UTF-8");
+			stringEntity.setContentType("application/json");
+
+			httpRequest.setEntity(stringEntity);
+
+			//发送请求并等待响应
+			HttpResponse httpResponse=httpClient.execute(httpRequest);
+
+			HttpResponse httpResponse1 = httpResponse;
+
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 }

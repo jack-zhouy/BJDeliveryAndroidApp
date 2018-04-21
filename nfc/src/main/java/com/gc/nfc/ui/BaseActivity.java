@@ -27,7 +27,7 @@ public abstract class BaseActivity extends Activity {
 	abstract void init();
 
 	public enum HttpRequestType{
-		GET,POST;
+		GET,POST,PUT,
 	}
 
 
@@ -55,6 +55,8 @@ public abstract class BaseActivity extends Activity {
             		res = NetUtil.httpPost(nrc);
 				}else if(nrc.getType()==HttpRequestType.GET){//get请求
 				    res = NetUtil.httpGet(nrc);
+				}else if(nrc.getType()==HttpRequestType.PUT){//put请求
+					res = NetUtil.httpPut(nrc);
 				}
 				Message message = Message.obtain();
 				message.obj = res;

@@ -11,8 +11,8 @@
     <string name="str_write_mu">写NFC标签非NDEF格式的数据</string>
 
     <string-array name="spinner_array_payType">
-        <item>现金支付</item>
         <item>扫码支付</item>
+        <item>现金支付</item>
         <item>赊销</item>
     </string-array>
 

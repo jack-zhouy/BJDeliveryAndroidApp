@@ -28,6 +28,7 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.widget.Spinner;
 import com.amap.api.maps.model.LatLng;
@@ -91,7 +92,7 @@ import java.util.Random;
 public class OrderDealActivity extends BaseActivity implements OnClickListener,AbsListView.OnScrollListener  {
 
 	AlertDialog m_alertDialogTicketSelect;//气票选择窗口
-	AlertDialog m_alertDialogTicketCoupon;//优惠券选择窗口
+	AlertDialog m_alertDialogCouponSelect;//优惠券选择窗口
 
 	private TextView m_textViewPayStatus;//支付状态
 	private Button m_buttonNext;//下一步
@@ -109,6 +110,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 	private SwipeRefreshLayout swipeRefreshLayout;
 
+	private String m_depLeader;//配送工所属门店责任人
 	private AppContext appContext;
 	private JSONObject m_OrderJson;//订单详情
 	private String m_orderId;//订单号
@@ -120,6 +122,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 	private String m_totalFee;//商品总价
 	private JSONObject m_curUserSettlementType;//结算类型
 
+
 	private String m_curUserId;//该订单用户
 	private User m_deliveryUser;//配送工
 	public static String m_orderPayStatus;//支付状态
@@ -129,6 +132,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 	private JSONArray m_ValidTicketJsonArray;//有效的气票json数组
 	private JSONArray m_ValidCouponJsonArray;//有效的优惠券json数组
+
+	private boolean m_isTicketUser; //是否是气票用户
 
 
 	private Handler handler = new Handler(){
@@ -216,13 +221,14 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 			m_buttonNext.setOnClickListener(this);
 			m_textViewPaytype.setVisibility(View.INVISIBLE);
+			m_spinnerPaytype.setSelection(1,true);
 			m_spinnerPaytype.setOnItemSelectedListener(new OnItemSelectedListener() {
 				@Override
 				public void onItemSelected(AdapterView<?> parent, View view,
 										   int pos, long id) {
 
 					switch(pos){
-						case 1:
+						case 0://扫码
 							PayOnScan();
 							break;
 						default:
@@ -255,7 +261,9 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 				}
 			});
 
-
+			//数据结构初始化
+			m_TicketList = new ArrayList<JSONObject>();
+			m_CouponList = new ArrayList<JSONObject>();
 
 
 			//数据初始化
@@ -263,6 +271,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			setOrderDetailsInfo();
 			setOrderAppendInfo();
 			getRecvLocation();
+			GetDepLeader();
 
 			//如果结算类型不是普通用户，就隐藏支付方式选择
 			if(!m_curUserSettlementType.get("code").toString().equals("00001")){
@@ -270,8 +279,22 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 				m_textViewPaytype.setVisibility(View.VISIBLE);
 				m_textViewPaytype.setText(m_curUserSettlementType.get("name").toString());
 			}
+
+			//如果结算类型不是气票用户，就隐藏气票优惠券选择
+			if(!m_curUserSettlementType.get("code").toString().equals("00003")){
+				LinearLayout LinearLayout_ticketSelect = (LinearLayout) findViewById(R.id.LinearLayout_ticketSelect);
+				LinearLayout_ticketSelect.setVisibility(View.INVISIBLE);
+				LinearLayout LinearLayout_couponSelect = (LinearLayout) findViewById(R.id.LinearLayout_couponSelect);
+				LinearLayout_couponSelect.setVisibility(View.INVISIBLE);
+				m_isTicketUser = false;
+			}else{
+				m_isTicketUser = true;
+			}
+
 			//获取用户有效的气票
 			getCustomerTickets();
+			//获取用户有效的优惠券
+			getCustomerCoupons();
 
 
 		}catch (JSONException e){
@@ -429,12 +452,28 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				break;
+			{
+				if(m_orderPayStatus.equals("已支付")){
+					//完成配送
+					deliverOver();
+				}else{
+					if(m_isTicketUser){
+						if(isTicketsOrCouponsSelectedOK()){
+							ticketUserPay();
+						}else{
+							Toast.makeText(OrderDealActivity.this, "优惠券、气票选择与实际商品数量不匹配！", Toast.LENGTH_LONG).show();
+						}
+					}else{
+						commonUserPay();
+					}
+				}
+			}
+			break;
 			case R.id.imageView_ticketSelect:// 用户的气票
 				showTicketSelectAlertDialog(v);
 				break;
 			case R.id.imageView_couponSelect://用户的优惠券
-
+				showCouponSelectAlertDialog(v);
 				break;
 			default:
 				break;
@@ -494,128 +533,259 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 	//更新气票列表
 	private void refleshTicketList(){
-		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
+		try {
+			List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
+			for(int i=0;i<m_TicketList.size(); i++){
+				JSONObject tempTicketJson = m_TicketList.get(i);
+				Map<String,Object> ticketInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+				ticketInfo.put("baseInfo", "编码:"+tempTicketJson.getString("ticketSn")+"规格:"+tempTicketJson.getString("specName"));
+				ticketInfo.put("validTime", "失效时间:"+tempTicketJson.getString("endDate"));
+				list_map.add(ticketInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+			}
+			//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
+			SimpleAdapter simpleAdapter = new SimpleAdapter(
+					OrderDealActivity.this,/*传入一个上下文作为参数*/
+					list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
+					R.layout.tick_list_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
+					new String[]{"baseInfo","validTime"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+					new int[]{R.id.items_baseInfo,R.id.items_validTime}) ;
 
-		for(int i=0;i<m_TicketList.size(); i++){
-			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_TicketList.get(i));
-			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+			m_listView_ticket.setAdapter(simpleAdapter);
+			setListViewHeightBasedOnChildren(m_listView_ticket);
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
 		}
-		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
-		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				OrderDealActivity.this,/*传入一个上下文作为参数*/
-				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
-				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
-
-		m_listView_ticket.setAdapter(simpleAdapter);
-		setListViewHeightBasedOnChildren(m_listView_ticket);
 	}
 
 	//更新优惠券列表
 	private void refleshCouponList(){
-		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
+		try {
+			List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
+			for(int i=0;i<m_CouponList.size(); i++){
+				JSONObject tempCouponJson = m_CouponList.get(i);
+				Map<String,Object> ticketInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+				ticketInfo.put("baseInfo", "编码:"+tempCouponJson.getString("id")+"规格:"+tempCouponJson.getString("specName"));
+				ticketInfo.put("validTime", "失效时间:"+tempCouponJson.getString("endDate"));
+				list_map.add(ticketInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+			}
+			//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
+			SimpleAdapter simpleAdapter = new SimpleAdapter(
+					OrderDealActivity.this,/*传入一个上下文作为参数*/
+					list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
+					R.layout.coupon_list_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
+					new String[]{"baseInfo","validTime"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+					new int[]{R.id.items_baseInfo,R.id.items_validTime}) ;
 
-		for(int i=0;i<m_CouponList.size(); i++){
-			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_CouponList.get(i));
-			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+			m_listView_coupon.setAdapter(simpleAdapter);
+			setListViewHeightBasedOnChildren(m_listView_coupon);
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
 		}
-		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
-		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				OrderDealActivity.this,/*传入一个上下文作为参数*/
-				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
-				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
-		m_listView_coupon.setAdapter(simpleAdapter);
-		setListViewHeightBasedOnChildren(m_listView_coupon);
 	}
 
 	//气票删除函数
 	private void deleteTicket(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("取消使用气票:  "+m_TicketList.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+		try {
+			JSONObject tempTicketJson = m_TicketList.get(position);
+			String ticketInfo = "编号:"+tempTicketJson.getString("ticketSn")+"  规格:"+tempTicketJson.getString("specName");
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			dialog.setMessage("取消使用气票:  "+ticketInfo+"   ?");
+			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_TicketList.remove(position);
-				refleshTicketList();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					m_TicketList.remove(position);
+					refleshTicketList();
+				}
+			});
+			dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+				}
+			});
+			dialog.show();
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		}
 	}
 
 	//优惠券删除函数
 	private void deleteCoupon(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("取消使用优惠券:  "+m_CouponList.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+		try {
+			JSONObject tempCouponJson = m_CouponList.get(position);
+			String couponInfo = "编号:"+tempCouponJson.getString("id")+"  规格:"+tempCouponJson.getString("specName");
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			dialog.setMessage("取消使用优惠券:  "+couponInfo+"   ?");
+			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_CouponList.remove(position);
-				refleshCouponList();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					m_CouponList.remove(position);
+					refleshCouponList();
+				}
+			});
+			dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+				}
+			});
+			dialog.show();
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		}
 	}
 
 
 	//气票选择窗口
 	public void showTicketSelectAlertDialog(View view){
-
-		final String[] items = {"Struts2","Spring","Hibernate","Mybatis","Spring MVC"};
-		// 创建一个AlertDialog建造者
-		AlertDialog.Builder alertDialogBuilder= new AlertDialog.Builder(this);
-		// 设置标题
-		alertDialogBuilder.setTitle("气票选择窗口");
-		// 参数介绍
-		// 第一个参数：弹出框的信息集合，一般为字符串集合
-		// 第二个参数：被默认选中的，一个布尔类型的数组
-		// 第三个参数：勾选事件监听
-		alertDialogBuilder.setMultiChoiceItems(items, null, new DialogInterface.OnMultiChoiceClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+		try {
+			if(m_ValidCouponJsonArray==null){
+				return;
+			}
+			int iTotalCount = m_ValidTicketJsonArray.length();
+			String[] items = new String[iTotalCount];
+			final boolean checkedArray[]=new boolean[iTotalCount];
+			for(int i=0; i<iTotalCount; i++){
+				checkedArray[i] = false;
+			}
+			for (int i = 0; i < iTotalCount; i++) {
+				JSONObject tempTicketJson = m_ValidTicketJsonArray.getJSONObject(i);
+				String ticketInfo = "编号:"+tempTicketJson.getString("ticketSn")+"  规格:"+tempTicketJson.getString("specName");
+				items[i] = ticketInfo;
 
 			}
-		});
-		alertDialogBuilder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface arg0, int arg1) {
-				//TODO 业务逻辑代码
+			// 创建一个AlertDialog建造者
+			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+			// 设置标题
+			alertDialogBuilder.setTitle("气票选择窗口");
+			// 参数介绍
+			// 第一个参数：弹出框的信息集合，一般为字符串集合
+			// 第二个参数：被默认选中的，一个布尔类型的数组
+			// 第三个参数：勾选事件监听
+			alertDialogBuilder.setMultiChoiceItems(items, null, new DialogInterface.OnMultiChoiceClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+					checkedArray[which] = isChecked;
+				}
+			});
+			alertDialogBuilder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
-				// 关闭提示框
-				m_alertDialogTicketSelect.dismiss();
-			}
-		});
-		alertDialogBuilder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+					//TODO 业务逻辑代码
+					//更新已选择的气票
+					try{
+						m_TicketList.clear();
+						for(int i=0; i<m_ValidTicketJsonArray.length(); i++){
+							if(checkedArray[i]){
+								m_TicketList.add(m_ValidTicketJsonArray.getJSONObject(i));
+							}
+							refleshTicketList();
+						}
+						// 关闭提示框
+						m_alertDialogTicketSelect.dismiss();}
+					catch (JSONException e){
+						Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				}
+			});
+			alertDialogBuilder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface arg0, int arg1) {
-				// TODO 业务逻辑代码
-				// 关闭提示框
-				m_alertDialogTicketSelect.dismiss();
-			}
-		});
-		m_alertDialogTicketSelect = alertDialogBuilder.create();
-		m_alertDialogTicketSelect.show();
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+					// TODO 业务逻辑代码
+					// 关闭提示框
+					m_alertDialogTicketSelect.dismiss();
+				}
+			});
+			m_alertDialogTicketSelect = alertDialogBuilder.create();
+			m_alertDialogTicketSelect.show();
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+					Toast.LENGTH_LONG).show();
+		}
 	}
+
+	//优惠券选择窗口
+	public void showCouponSelectAlertDialog(View view){
+		try {
+			if(m_ValidCouponJsonArray==null){
+				return;
+			}
+			int iTotalCount = m_ValidCouponJsonArray.length();
+			String[] items = new String[iTotalCount];
+			final boolean checkedArray[]=new boolean[iTotalCount];
+			for(int i=0; i<iTotalCount; i++){
+				checkedArray[i] = false;
+			}
+			for (int i = 0; i < iTotalCount; i++) {
+				JSONObject tempTicketJson = m_ValidCouponJsonArray.getJSONObject(i);
+				String couponInfo = "编号:"+tempTicketJson.getString("id")+"  规格:"+tempTicketJson.getString("specName");
+				items[i] = couponInfo;
+
+			}
+
+			// 创建一个AlertDialog建造者
+			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+			// 设置标题
+			alertDialogBuilder.setTitle("优惠券选择窗口");
+			// 参数介绍
+			// 第一个参数：弹出框的信息集合，一般为字符串集合
+			// 第二个参数：被默认选中的，一个布尔类型的数组
+			// 第三个参数：勾选事件监听
+			alertDialogBuilder.setMultiChoiceItems(items, null, new DialogInterface.OnMultiChoiceClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+					checkedArray[which] = isChecked;
+				}
+			});
+			alertDialogBuilder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+					//TODO 业务逻辑代码
+					//更新已选择的优惠券
+					try{
+						m_CouponList.clear();
+						for(int i=0; i<m_ValidCouponJsonArray.length(); i++){
+							if(checkedArray[i]){
+								m_CouponList.add(m_ValidCouponJsonArray.getJSONObject(i));
+							}
+							refleshCouponList();
+						}
+						// 关闭提示框
+						m_alertDialogCouponSelect.dismiss();}
+					catch (JSONException e){
+						Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				}
+			});
+			alertDialogBuilder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+					// TODO 业务逻辑代码
+					// 关闭提示框
+					m_alertDialogCouponSelect.dismiss();
+				}
+			});
+			m_alertDialogCouponSelect = alertDialogBuilder.create();
+			m_alertDialogCouponSelect.show();
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+					Toast.LENGTH_LONG).show();
+		}
+	}
+
 
 	//获取用户名下的气票
 	public void getCustomerTickets() {
@@ -658,5 +828,361 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			}
 		}, nrc);
 	}
+	//获取用户名下的优惠券
+	public void getCustomerCoupons() {
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
 
+		nrc.requestUrl = NetUrlConstant.COUPONURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("customerUserId",m_curUserId);//当前客户
+		params.put("useStatus",0);//未使用
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							try {
+								JSONObject TicketJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								m_ValidCouponJsonArray = TicketJson.getJSONArray("items");
+
+							}catch (IOException e){
+								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+										Toast.LENGTH_LONG).show();
+							}catch (JSONException e) {
+								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+										Toast.LENGTH_LONG).show();
+							}
+						}
+					}else {
+						Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(OrderDealActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+	}
+
+	//校验气票和优惠券选择是否OK
+	private boolean isTicketsOrCouponsSelectedOK() {
+		try {
+			//获取订单的商品详情
+			JSONArray orderDetailList = m_OrderJson.getJSONArray("orderDetailList");
+			Map<String, Integer> goodsMapQuantity = new HashMap<String, Integer>(); //统计每个规格的数量
+			for (int i = 0; i < orderDetailList.length(); i++) {
+				//找出商品规格
+				JSONObject orderDetail = orderDetailList.getJSONObject(i);  // 订单详情单条记录
+				JSONObject goodDetail = orderDetail.getJSONObject("goods");  // 商品详情
+				String goodCode = goodDetail.get("code").toString();
+				int tempCount = Integer.parseInt(orderDetail.get("quantity").toString());
+				if(goodsMapQuantity.containsKey(goodCode)){
+					int totalCount = goodsMapQuantity.get(goodCode);
+					totalCount += tempCount;
+					goodsMapQuantity.remove(goodCode);
+					goodsMapQuantity.put(goodCode,totalCount);
+				}else{
+					goodsMapQuantity.put(goodCode,tempCount);
+				}
+			}
+			Map<String, Integer> ticketCouponMapQuantity = new HashMap<String, Integer>(); //统计优惠券、气票总和每个规格的数量
+			for (int i = 0; i < m_TicketList.size(); i++) {
+				//找出商品规格
+				JSONObject ticketDetail = m_TicketList.get(i);  // 气票json
+				String goodCode = ticketDetail.get("specCode").toString();
+				int tempCount = 1;
+				if(ticketCouponMapQuantity.containsKey(goodCode)){
+					int totalCount = goodsMapQuantity.get(goodCode);
+					totalCount += tempCount;
+					ticketCouponMapQuantity.remove(goodCode);
+					ticketCouponMapQuantity.put(goodCode,totalCount);
+				}else{
+					ticketCouponMapQuantity.put(goodCode,tempCount);
+				}
+			}
+			for (int i = 0; i < m_CouponList.size(); i++) {
+				//找出商品规格
+				JSONObject couponDetail = m_CouponList.get(i);  // 优惠券json
+				String goodCode = couponDetail.get("specCode").toString();
+				int tempCount = 1;
+				if(ticketCouponMapQuantity.containsKey(goodCode)){
+					int totalCount = ticketCouponMapQuantity.get(goodCode);
+					totalCount += tempCount;
+					ticketCouponMapQuantity.remove(goodCode);
+					ticketCouponMapQuantity.put(goodCode,totalCount);
+				}else{
+					ticketCouponMapQuantity.put(goodCode,tempCount);
+				}
+			}
+
+			if(goodsMapQuantity.size()!=ticketCouponMapQuantity.size()){
+				return false;
+			}
+			for (String key : goodsMapQuantity.keySet()) {
+				Integer neadedCount = goodsMapQuantity.get(key);
+				Integer resultCount = ticketCouponMapQuantity.get(key);
+				if(resultCount==null){
+					return false;
+				}
+				if(neadedCount.intValue() != resultCount.intValue()){
+					return false;
+				}
+			}
+
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return false;
+		}
+		return true;
+	}
+
+
+	//气票用户支付
+	private boolean ticketUserPay() {
+		try {
+			// get请求
+			NetRequestConstant nrc = new NetRequestConstant();
+			nrc.setType(HttpRequestType.PUT);
+
+			nrc.requestUrl = NetUrlConstant.TICKETPAYURL+"/"+m_orderId;
+			nrc.context = this;
+			Map<String, Object> params = new HashMap<String, Object>();
+			Map<String, Object> body = new HashMap<String, Object>();
+			//统计所有气票编码
+			String ticketSns = "";
+			for (int i = 0; i < m_TicketList.size(); i++) {
+				//找出商品规格
+				JSONObject ticketDetail = m_TicketList.get(i);  // 气票json
+				String ticketSn = ticketDetail.get("ticketSn").toString();
+				ticketSns+=ticketSn;
+				if(i!=(m_TicketList.size()-1)){
+					ticketSns+=",";
+				}
+			}
+			//统计所有优惠券编码
+			String couponSns = "";
+			for (int i = 0; i < m_CouponList.size(); i++) {
+				//找出商品规格
+				JSONObject couponDetail = m_CouponList.get(i);  // 气票json
+				String couponSn = couponDetail.get("id").toString();
+				couponSns+=couponSn;
+				if(i!=(m_CouponList.size()-1)){
+					couponSns+=",";
+				}
+			}
+			params.put("coupons",couponSns);// 气票
+			params.put("tickets",ticketSns);//优惠券
+			nrc.setParams(params);
+			nrc.setBody(body);
+
+			getServer(new Netcallback() {
+				public void preccess(Object res, boolean flag) {
+					if(flag){
+						HttpResponse response=(HttpResponse)res;
+						if(response!=null){
+							if(response.getStatusLine().getStatusCode()==200){
+								//完成配送
+								deliverOver();
+							}else if(response.getStatusLine().getStatusCode()==404){
+								Toast.makeText(OrderDealActivity.this, "订单不存在",
+										Toast.LENGTH_LONG).show();
+							} else{
+								Toast.makeText(OrderDealActivity.this, "支付失败",
+										Toast.LENGTH_LONG).show();
+							}
+						}else {
+							Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+									Toast.LENGTH_LONG).show();
+						}
+					} else {
+						Toast.makeText(OrderDealActivity.this, "网络未连接！",
+								Toast.LENGTH_LONG).show();
+					}
+				}
+			}, nrc);
+			return true;
+
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return false;
+		}
+	}
+
+	//非气票用户支付
+	private boolean commonUserPay() {
+		try {
+			// get请求
+			NetRequestConstant nrc = new NetRequestConstant();
+			nrc.setType(HttpRequestType.PUT);
+
+			nrc.requestUrl = NetUrlConstant.ORDERURL+"/"+m_orderId;
+			nrc.context = this;
+			Map<String, Object> body = new HashMap<String, Object>();
+
+			//如果结算类型是普通用户，就需要提交支付方式参数
+			String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit"};//扫码，现金，赊销
+			if(m_curUserSettlementType.get("code").toString().equals("00001")){
+				body.put("payType",payTypes[m_spinnerPaytype.getSelectedItemPosition()]);//支付方式
+			}
+			//如果是扫码，支付状态没有支付就不允许提交订单
+			if(m_spinnerPaytype.getSelectedItemPosition()==0){
+				if(!m_orderPayStatus.equals("已支付")){
+					Toast.makeText(OrderDealActivity.this, "扫码支付结果未返回！",
+							Toast.LENGTH_LONG).show();
+					return false;
+				}
+			}
+
+			//如果是已支付，支付方式只能为扫码
+			if(m_orderPayStatus.equals("已支付")){
+				if(m_spinnerPaytype.getSelectedItemPosition()!=0) {
+					Toast.makeText(OrderDealActivity.this, "订单已经支付，确认支付类型为扫码？",
+							Toast.LENGTH_LONG).show();
+					return false;
+				}
+			}
+			body.put("payStatus","PSPaied");// 修改订单状态为已经支付
+			nrc.setBody(body);
+			getServer(new Netcallback() {
+				public void preccess(Object res, boolean flag) {
+					if(flag){
+						HttpResponse response=(HttpResponse)res;
+						if(response!=null){
+							if(response.getStatusLine().getStatusCode()==200){
+								//完成配送
+								deliverOver();
+							}else if(response.getStatusLine().getStatusCode()==404){
+								Toast.makeText(OrderDealActivity.this, "订单不存在",
+										Toast.LENGTH_LONG).show();
+							} else{
+								Toast.makeText(OrderDealActivity.this, "支付失败"+response.getStatusLine().getStatusCode(),
+										Toast.LENGTH_LONG).show();
+							}
+						}else {
+							Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+									Toast.LENGTH_LONG).show();
+						}
+					} else {
+						Toast.makeText(OrderDealActivity.this, "网络未连接！",
+								Toast.LENGTH_LONG).show();
+					}
+				}
+			}, nrc);
+			return true;
+
+		}catch (JSONException e){
+			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return false;
+		}
+	}
+
+	//配送完成
+	private boolean deliverOver() {
+
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+
+		nrc.requestUrl = NetUrlConstant.TASKORDERDEALURL+"/"+m_taskId;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+
+
+		params.put("businessKey",m_orderId);
+		if(m_depLeader==null){
+			Toast.makeText(OrderDealActivity.this, "所属店长查询失败！",
+					Toast.LENGTH_LONG).show();
+			return false;
+		}
+		params.put("candiUser", m_depLeader);
+		params.put("orderStatus", 2);//待核单
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							Toast.makeText(OrderDealActivity.this, "订单配送成功",
+									Toast.LENGTH_LONG).show();
+							MediaPlayer music = MediaPlayer.create(OrderDealActivity.this, R.raw.finish_order);
+							music.start();
+							Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
+							Bundle bundle = new Bundle();
+
+							bundle.putInt("switchTab", 1);//tab跳转到我的订单
+							intent.putExtras(bundle);
+
+							startActivity(intent);
+							finish();
+						} else{
+							Toast.makeText(OrderDealActivity.this, "订单配送失败",
+									Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(OrderDealActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+		return true;
+	}
+
+	//获取本配送工的店长
+	private void GetDepLeader() {
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+
+		nrc.requestUrl = NetUrlConstant.TGETDEPLEADERURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+
+
+		params.put("userId",m_deliveryUser.getUsername());
+		//params.put("candiUser", m_user.getUsername());
+		params.put("groupCode", "00005");//门店店长
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag) {
+					HttpResponse response = (HttpResponse) res;
+					if (response != null) {
+						if (response.getStatusLine().getStatusCode() == 200) {
+							try {
+								JSONObject usersJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray usersListJson = usersJson.getJSONArray("items");
+								if(usersListJson.length()>=1){
+									m_depLeader = usersListJson.getJSONObject(0).getString("userId");
+								}
+							} catch (JSONException e) {
+								Toast.makeText(OrderDealActivity.this, "未知错误，异常！" + e.getMessage(),
+										Toast.LENGTH_LONG).show();
+							} catch (IOException e) {
+								Toast.makeText(OrderDealActivity.this, "未知错误，异常！" + e.getMessage(),
+										Toast.LENGTH_LONG).show();
+							}
+						} else {
+							Toast.makeText(OrderDealActivity.this, "订单配送失败",
+									Toast.LENGTH_LONG).show();
+						}
+					} else {
+						Toast.makeText(OrderDealActivity.this, "网络未连接！",
+								Toast.LENGTH_LONG).show();
+					}
+				}}}, nrc);
+	}
 }

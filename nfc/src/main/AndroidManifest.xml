@@ -60,38 +60,53 @@
             android:theme="@android:style/Theme.NoTitleBar"
             android:configChanges="orientation|keyboardHidden|screenSize" />
 
-        <activity android:name=".ui.LoginActivity">
+        <activity android:name=".ui.WelcomeActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.LoginActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="首页"/>
         <activity android:name=".ui.MainlyActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="首页"/>
         <activity android:name=".ui.MineActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="我的"/>
         <activity android:name=".ui.ValidOrdersActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="待抢订单"/>
         <activity android:name=".ui.MyOrdersActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="我的订单"/>
         <activity android:name=".ui.HistoryOrdersActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="历史订单"/>
         <activity android:name=".ui.OrderDetailActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="订单详情"/>
         <activity android:name=".ui.BottleExchangeActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="钢瓶交接"/>
         <activity android:name=".ui.OrderDealActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="订单处理"/>
 
         <activity android:name=".ui.MybottlesActivity"
+            android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="我的气瓶"/>
 
