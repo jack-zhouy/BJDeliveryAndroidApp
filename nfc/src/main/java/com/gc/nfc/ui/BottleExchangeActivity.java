@@ -75,6 +75,9 @@ import java.util.Map;
 public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
 	private int m_takeOverCount = 0;//空瓶交接状态
 
+	private TextView m_textViewTotalCountKP;// 空瓶数量
+	private TextView m_textViewTotalCountZP;// 重瓶数量
+
 	private NfcAdapter mNfcAdapter;
 	private PendingIntent mPendingIntent;
 
@@ -175,6 +178,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			radioButton_zp=(RadioButton)findViewById(R.id.radioButton_zp_id);
 			m_imageViewKPEye = (ImageView) findViewById(R.id.imageView_KPEYE);
 			m_imageViewZPEye = (ImageView) findViewById(R.id.imageView_ZPEYE);
+			m_textViewTotalCountKP = (TextView) findViewById(R.id.items_totalCountKP);
+			m_textViewTotalCountZP = (TextView) findViewById(R.id.items_totalCountZP);
+
+
 
 			m_imageViewZPEye.setOnClickListener(this);
 			m_imageViewKPEye.setOnClickListener(this);
@@ -480,6 +487,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//NFC更新空瓶表
 	private void refleshBottlesListKP(){
+		m_textViewTotalCountKP.setText(Integer.toString(m_BottlesListKP.size()));
 		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
 
 		for(int i=0;i<m_BottlesListKP.size(); i++){
@@ -501,6 +509,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//NFC更新重瓶表
 	private void refleshBottlesListZP(){
+		m_textViewTotalCountZP.setText(Integer.toString(m_BottlesListZP.size()));
 		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
 
 		for(int i=0;i<m_BottlesListZP.size(); i++){

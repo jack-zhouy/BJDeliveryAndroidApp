@@ -19,4 +19,6 @@ public class NetUrlConstant {
 
 	public static final String BOTTLETAKEOVERURL = "http://120.78.241.67/api/GasCylinder/TakeOver";  //钢瓶责任交接
 
+	public static final String CUSTOMERCREDITURL = "http://120.78.241.67/api/CustomerCredit";  //用户欠款查询
+
 }

@@ -4,62 +4,128 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-    <ImageView
-        android:id="@+id/items_imageView1"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@drawable/icon_order" />
-
-    <TextView
-        android:id="@+id/items_creatTime"
+    <LinearLayout
+        android:id="@+id/linearLayout_orderFirst"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:layout_toEndOf="@+id/items_imageView1"
-        android:layout_toRightOf="@+id/items_imageView1"
-        android:textColor="@color/transparent_background" />
-    <TextView
-        android:clickable="false"
-        android:id="@+id/items_orderStatus"
-        android:layout_width="60dp"
-        android:layout_height="35dp"
-        android:layout_marginRight="5dp"
-        android:layout_alignParentRight="true"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/ratio_button"
-        android:padding="5dp"
-        android:text=""
-        android:textColor="@color/white"
-        android:textSize="15sp" />
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/items_orderSn"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="16dp"
+            android:textSize="18sp"
+            android:textColor="@color/textColorPrimary"/>
+        <TextView
+            android:id="@+id/items_creatTime"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp"
+            android:layout_marginLeft="16dp"
+            android:textSize="14sp"
+            android:textColor="@color/textColorPrimary" />
+    </LinearLayout>
 
+    <!--<TextView-->
+        <!--android:id="@+id/textView3"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="1dp"-->
+        <!--android:layout_below="@+id/linearLayout_orderFirst"-->
+        <!--android:background="@color/shallowgray" />-->
 
-    <TextView
-        android:id="@+id/textView3"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_below="@+id/items_imageView1"
-        android:background="@color/textgray" />
-
-    <TextView
-        android:id="@+id/items_useInfo"
+    <LinearLayout
+        android:id="@+id/linearLayout_orderSecond"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/textView3"
-        android:textColor="@color/transparent_background" />
+        android:layout_below="@+id/linearLayout_orderFirst"
+        android:orientation="horizontal">
+        <ImageView
+            android:id="@+id/items_imageUserIcon"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginLeft="16dp"
+            android:layout_below="@+id/linearLayout_orderFirst"
+            android:src="@drawable/icon_order" />
+        <TextView
+            android:id="@+id/items_userId"
+            android:layout_width="wrap_content"
+            android:layout_height="15dp"
+            android:layout_weight="1"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:textColor="@color/textColorPrimary" />
+
+        <TextView
+            android:id="@+id/items_userPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="15dp"
+            android:layout_weight="1"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:textColor="@color/textColorPrimary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout_orderThird"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/linearLayout_orderSecond"
+        android:orientation="horizontal">
+    <TextView
+        android:id="@+id/items_addressStatic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/linearLayout_orderSecond"
+        android:layout_marginLeft="16dp"
+        android:hint="地 址："
+        android:textColorHint="@color/textColorPrimary"
+        android:textSize="14sp" />
 
     <TextView
         android:id="@+id/items_address"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/textView3"
-        android:layout_marginTop="16dp"
-        android:textColor="@color/orange" />
+        android:layout_weight="10"
+        android:layout_below="@+id/linearLayout_orderSecond"
+        android:layout_toRightOf="@+id/items_addressStatic"
+        android:textSize="14sp"
+        android:textColor="@color/textColorPrimary" />
+
+    <!--<TextView-->
+    <!--android:id="@+id/items_creatTime"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_marginTop="15dp"-->
+    <!--android:layout_toEndOf="@+id/items_imageView1"-->
+    <!--android:layout_toRightOf="@+id/items_imageView1"-->
+    <!--android:textColor="@color/transparent_background" />-->
+    <TextView
+        android:clickable="false"
+        android:id="@+id/items_orderStatus"
+        android:layout_width="80dp"
+        android:layout_height="35dp"
+        android:layout_marginRight="10dp"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/ratio_button"
+        android:padding="5dp"
+        android:layout_weight="1"
+        android:text="待抢单"
+        android:layout_below="@+id/items_address"
+        android:textColor="@color/white"
+        android:textAlignment="center"
+        android:textSize="16sp" />
+    </LinearLayout>
 
 
+    <!--<TextView-->
+    <!--android:id="@+id/textView3"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="1dp"-->
+    <!--android:layout_below="@+id/items_imageView1"-->
+    <!--android:background="@color/textgray" />-->
 
 
 

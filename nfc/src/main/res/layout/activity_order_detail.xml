@@ -21,61 +21,137 @@
                 android:orientation="vertical"
                 android:visibility="visible"
                 android:layout_weight="1">
+                <TextView
+                    android:id="@+id/items_orderSn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginLeft="16dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/white"/>
 
                 <LinearLayout
+                    android:id="@+id/linearLayout_orderFirst"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:orientation="vertical">
+                    android:orientation="horizontal">
 
                     <TextView
-                        android:id="@+id/textview_orderSn"
+                        android:id="@+id/items_creatTime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="5dp"
-                        android:text="订单号"
-                        android:textColor="@color/white"
-                        android:textSize="20dp" />
+                        android:layout_weight="1"
+                        android:layout_marginTop="0dp"
+                        android:layout_marginLeft="16dp"
+                        android:textSize="14sp"
+                        android:textColor="@color/white" />
                     <TextView
-                        android:id="@+id/textview_userInfo"
+                        android:id="@+id/items_passedTime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="5dp"
-                        android:textColor="@color/white"
-                        android:text="用户信息"
-                        android:textSize="15dp" />
-                    <TextView
-                        android:id="@+id/textview_createTime"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="5dp"
-                        android:text="创建时间"
-                        android:textColor="@color/white"
-                        android:textSize="15dp" />
+                        android:layout_weight="1"
+                        android:layout_marginTop="0dp"
+                        android:layout_marginLeft="16dp"
+                        android:textSize="14sp"
+                        android:textColor="@color/colorAccent" />
                 </LinearLayout>
-                <RelativeLayout
+
+                <!--<TextView-->
+                <!--android:id="@+id/textView3"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="1dp"-->
+                <!--android:layout_below="@+id/linearLayout_orderFirst"-->
+                <!--android:background="@color/shallowgray" />-->
+
+                <LinearLayout
+                    android:id="@+id/linearLayout_orderSecond"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
+                    android:layout_below="@+id/linearLayout_orderFirst"
+                    android:orientation="horizontal">
+                    <ImageView
+                        android:id="@+id/items_imageUserIcon"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_marginLeft="16dp"
+                        android:layout_below="@+id/linearLayout_orderFirst"
+                        android:src="@drawable/icon_order" />
+                    <TextView
+                        android:id="@+id/items_userId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="15dp"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="5dp"
+                        android:layout_marginTop="8dp"
+                        android:textSize="14sp"
+                        android:textColor="@color/white" />
+
+                    <TextView
+                        android:id="@+id/items_userPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="15dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
+                        android:textSize="14sp"
+                        android:textColor="@color/white" />
+                    <TextView
+                        android:id="@+id/items_userCredit"
+                        android:layout_width="wrap_content"
+                        android:layout_height="15dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
+                        android:textSize="14sp"
+                        android:textColor="@color/white" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/linearLayout_orderThird"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/linearLayout_orderSecond"
                     android:orientation="horizontal">
                     <TextView
-                        android:id="@+id/textview_address"
-                        android:layout_width="300dp"
+                        android:id="@+id/items_addressStatic"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_below="@+id/linearLayout_orderSecond"
+                        android:layout_marginLeft="16dp"
                         android:layout_marginTop="10dp"
-                        android:text="地址"
-                        android:textColor="@color/green"
-                        android:textSize="15dp" />
+                        android:hint="地 址："
+                        android:textColorHint="@color/white"
+                        android:textSize="14sp" />
 
+                    <TextView
+                        android:id="@+id/items_address"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="10"
+                        android:layout_below="@+id/linearLayout_orderSecond"
+                        android:layout_toRightOf="@+id/items_addressStatic"
+                        android:textSize="14sp"
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/white" />
+
+                    <!--<TextView-->
+                    <!--android:id="@+id/items_creatTime"-->
+                    <!--android:layout_width="match_parent"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:layout_marginTop="15dp"-->
+                    <!--android:layout_toEndOf="@+id/items_imageView1"-->
+                    <!--android:layout_toRightOf="@+id/items_imageView1"-->
+                    <!--android:textColor="@color/transparent_background" />-->
                     <ImageView
+                        android:clickable="false"
                         android:id="@+id/imageView_nav"
                         android:layout_width="50dp"
                         android:layout_height="50dp"
-                        android:layout_alignParentRight="true"
                         android:layout_marginRight="10dp"
-                        android:layout_marginTop="0dp"
-                        android:src="@drawable/icon_maps" />
-                </RelativeLayout>
+                        android:layout_alignParentRight="true"
+                        android:padding="5dp"
+                        android:layout_weight="1"
+                        android:src="@drawable/icon_maps"/>
+                </LinearLayout>
+
 
             </LinearLayout>
             <LinearLayout
@@ -86,22 +162,93 @@
 
 
                 <TextView
+                    android:id="@+id/textView_goodsNameStatic"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_marginTop="10dp"
+                    android:layout_marginLeft="16dp"
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:text="商品详情"
-                    android:textSize="15sp"
+                    android:textSize="20sp"
                     android:textColor="@color/black"/>
+                <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:descendantFocusability="blocksDescendants"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal" >
 
+                    <TextView
+                        android:layout_width="200dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="20dp"
+                        android:layout_marginTop="10dp"
+                        android:text="商品名称"
+                        android:textColor="@color/popup_main_background" />
 
+                    <TextView
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="280dp"
+                        android:layout_marginTop="10dp"
+                        android:text="数量"
+                        android:textColor="@color/popup_main_background"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginRight="10dp"
+                        android:layout_alignParentRight="true"
+                        android:text="价格"/>
+                </RelativeLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_below="@+id/textView_goodsNameStatic"
+                    android:background="@color/textgray" />
                 <ListView
                     android:id="@+id/listview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
+                <!--<TextView-->
+                    <!--android:layout_width="match_parent"-->
+                    <!--android:layout_height="0.5dp"-->
+                    <!--android:layout_marginTop="10dp"-->
+                    <!--android:layout_below="@+id/textView_goodsNameStatic"-->
+                    <!--android:background="@color/textgray" />-->
+                <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:descendantFocusability="blocksDescendants"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal" >
 
+                    <TextView
+                        android:layout_width="200dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="20dp"
+                        android:layout_marginTop="10dp"
+                        android:text="合计"
+                        android:textColor="@color/popup_main_background" />
 
+                    <TextView
+                        android:id="@+id/items_totalQuantity"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="280dp"
+                        android:layout_marginTop="10dp"
+                        android:text="数量"
+                        android:textColor="@color/popup_main_background"/>
+                    <TextView
+                        android:id="@+id/items_totalMount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginRight="10dp"
+                        android:layout_alignParentRight="true"
+                        android:textColor="@color/colorAccent"
+                        android:textSize="25dp"
+                        android:text="价格"/>
+                </RelativeLayout>
             </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
@@ -148,7 +295,7 @@
                     android:layout_width="34dp"
                     android:layout_height="38dp"
                     android:layout_marginLeft="10dp"
-                    android:src="@drawable/icon_order" />
+                    android:src="@drawable/ic_coupon_enabled" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -182,7 +329,7 @@
                     android:layout_width="34dp"
                     android:layout_height="38dp"
                     android:layout_marginLeft="10dp"
-                    android:src="@drawable/icon_order" />
+                    android:src="@drawable/ic_category_all" />
 
                 <TextView
                     android:layout_width="wrap_content"

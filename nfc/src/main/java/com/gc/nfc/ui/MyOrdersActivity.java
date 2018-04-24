@@ -150,13 +150,26 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
                                     JSONObject taskorder = taskOrdersListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
                                     JSONObject order = taskorder.getJSONObject("object");  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
                                     Map<String,Object> orderInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+                                    orderInfo.put("orderSn", "订单编号："+order.get("orderSn").toString());  //订单编号
                                     orderInfo.put("createTime", "下单时间："+order.get("createTime").toString());  //创建时间
                                     JSONObject addressJson = order.getJSONObject("recvAddr");
-                                    orderInfo.put("address", "地址："+addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString());  //收货地址
-                                    orderInfo.put("userInfo", "收货人："+order.get("recvName").toString()+" | "+"电话："+order.get("recvPhone").toString());  //用户信息
-
+                                    orderInfo.put("address", addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString());  //收货地址
+                                    orderInfo.put("userId", "联系人："+order.get("recvName"));  //用户信息
+                                    orderInfo.put("userPhone", "电话："+order.get("recvPhone").toString());  //用户信息
                                     String orderStatusDesc[] = {"待接单","派送中","待核单","已结束","已作废"};
                                     orderInfo.put("orderStatus", orderStatusDesc[Integer.parseInt(order.get("orderStatus").toString())]);
+
+                                    //获取结算类型
+                                    JSONObject customerJson = order.getJSONObject("customer");
+                                    JSONObject curUserSettlementType = customerJson.getJSONObject("settlementType");
+                                    if(curUserSettlementType.get("code").toString().equals("00003")) {//气票
+                                        orderInfo.put("userIcon", R.drawable.icon_ticket_user);
+                                    }else if(curUserSettlementType.get("code").toString().equals("00002")) {//月结
+                                        orderInfo.put("userIcon", R.drawable.icon_month_user);
+                                    } else{
+                                        orderInfo.put("userIcon", R.drawable.icon_common_user);
+                                    }
+
                                     list_map.add(orderInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
                                 }
                                 //2、创建适配器（可以使用外部类的方式、内部类方式等均可）
@@ -164,8 +177,8 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
                                         MyOrdersActivity.this,/*传入一个上下文作为参数*/
                                         list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
                                         R.layout.order_list_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-                                        new String[]{"createTime", "address", "userInfo","orderStatus"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-                                        new int[]{R.id.items_creatTime,R.id.items_address, R.id.items_useInfo,  R.id.items_orderStatus}) ;
+                                        new String[]{"orderSn", "createTime",  "userId",  "userPhone", "userIcon", "address","orderStatus"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+                                        new int[]{R.id.items_orderSn,R.id.items_creatTime,R.id.items_userId,R.id.items_userPhone, R.id.items_imageUserIcon,  R.id.items_address, R.id.items_orderStatus}) ;
 //                                {
 //                                    @Override
 //                                    public View getView(int position, View convertView, ViewGroup parent) {

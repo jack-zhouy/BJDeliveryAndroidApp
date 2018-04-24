@@ -1185,4 +1185,6 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 					}
 				}}}, nrc);
 	}
+
+
 }

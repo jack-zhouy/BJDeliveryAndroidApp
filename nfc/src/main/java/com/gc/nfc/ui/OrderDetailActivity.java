@@ -10,6 +10,8 @@ import com.gc.nfc.interfaces.Netcallback;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -30,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,21 +66,37 @@ import com.amap.api.navi.model.AMapNaviLocation;
 import java.util.ArrayList;
 import java.util.List;
 
-
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 
 public class OrderDetailActivity extends BaseActivity implements OnClickListener, INaviInfoCallback {
 
 	private TextView m_textViewOrderSn;//订单号
-	private TextView m_textViewUserInfo;//用户信息
+	private TextView m_textViewUserId;//联系人
+	private TextView m_textViewUserPhone;//联系人电话
 	private TextView m_textViewCreateTime;//创建时间
 	private TextView m_textViewAddress;//地址
+	private TextView m_textViewPayTypeInfo;//用户欠款
+	private TextView m_textViewPassedTime;//经过的时间
+
+
+
+	private ImageView m_imageViewUserIcon;//用户头像
+
+	private TextView m_textViewTotalQuantity;//合计数量
+	private TextView m_textViewTotalMount;//合计金额
+
+
 	private ListView m_listView;// 商品详情
 
 	private TextView m_textViewPayStatus;//支付状态
 	private TextView m_textViewOrderStatus;//订单状态
 	private TextView m_textViewReserveTime;//预约时间
 	private TextView m_textViewPs;//备注
+
+	private boolean m_isTicketUser;//是否是气票用户
+
 
 
 	private Button m_buttonNext;//下一步
@@ -91,17 +110,65 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	private int m_orderStatus;//订单状态
 	private User m_user;//当前登录用户
 
+	private String m_currentCustomerId;//当前订单用户
+
 	private LatLng m_recvLocation;//收货地址经纬度
 
 	private String m_businessKey;//订单号
 
 	private String m_recvAddr;//收获地址
 
+	private String m_orderCreateTime;//订单创建时间
+
+	private java.util.Timer timer;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
+		mHandler.sendEmptyMessage(1);
 	}
+	private Handler mHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			super.handleMessage(msg);
+
+			calculatePassedTime();
+			mHandler.sendEmptyMessageDelayed(1, 1000);
+		}
+
+	};
+
+
+	private  String getDatePoor(Date endDate, Date nowDate) {
+
+		long nd = 1000 * 24 * 60 * 60;
+		long nh = 1000 * 60 * 60;
+		long nm = 1000 * 60;
+		long ns = 1000;
+		// 获得两个时间的毫秒时间差异
+		long diff = endDate.getTime() - nowDate.getTime();
+		// 计算差多少天
+		long day = diff / nd;
+		// 计算差多少小时
+		long hour = diff % nd / nh+day*24;
+		// 计算差多少分钟
+		long min = diff % nd % nh / nm;
+		// 计算差多少秒//输出结果
+		long sec = diff % nd % nh % nm / ns;
+		return hour + "-" + min + "-" + sec;
+	}
+	private void calculatePassedTime(){
+		try {
+			Date now = new Date();
+			SimpleDateFormat simFormat = new SimpleDateFormat("yyyy-MM-d HH:mm:ss");
+			Date before = simFormat.parse(m_orderCreateTime);
+			m_textViewPassedTime.setText("已过时间:"+getDatePoor(now, before));
+		}catch (ParseException e){
+			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+		}
+	};
 	@Override
 	void init() {
 		try {
@@ -120,12 +187,16 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_businessKey = bundle.getString("businessKey");
 			m_orderStatus = bundle.getInt("orderStatus");
 
+
 			//控件初始化
 			m_buttonNext = (Button) findViewById(R.id.button_next);//下一步按钮
-			m_textViewOrderSn = (TextView) findViewById(R.id.textview_orderSn);
-			m_textViewUserInfo = (TextView) findViewById(R.id.textview_userInfo);
-			m_textViewCreateTime = (TextView) findViewById(R.id.textview_createTime);
-			m_textViewAddress = (TextView) findViewById(R.id.textview_address);
+			m_textViewOrderSn = (TextView) findViewById(R.id.items_orderSn);
+			m_textViewUserId = (TextView) findViewById(R.id.items_userId);
+			m_textViewUserPhone = (TextView) findViewById(R.id.items_userPhone);
+			m_textViewCreateTime = (TextView) findViewById(R.id.items_creatTime);
+			m_textViewAddress = (TextView) findViewById(R.id.items_address);
+			m_imageViewUserIcon= (ImageView) findViewById(R.id.items_imageUserIcon);
+			m_textViewPayTypeInfo= (TextView) findViewById(R.id.items_userCredit);
 			m_listView = (ListView) findViewById(R.id.listview);
 			m_imageViewNav = (ImageView) findViewById(R.id.imageView_nav);
 
@@ -133,6 +204,13 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_textViewOrderStatus = (TextView) findViewById(R.id.textview_orderStatus);
 			m_textViewReserveTime = (TextView) findViewById(R.id.textview_reserveTime);
 			m_textViewPs = (TextView) findViewById(R.id.textview_ps);
+			m_textViewTotalQuantity = (TextView) findViewById(R.id.items_totalQuantity);
+			m_textViewTotalMount = (TextView) findViewById(R.id.items_totalMount);
+
+			m_textViewPassedTime = (TextView) findViewById(R.id.items_passedTime);
+
+
+
 
 			m_buttonNext.setOnClickListener(this);
 			m_imageViewNav.setOnClickListener(this);
@@ -143,6 +221,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			setOrderDetailsInfo();
 			setOrderAppendInfo();
 			getRecvLocation();
+			//查询用户欠款
+			getCustomerCredit();
 
 			//初始化按钮显示
 			switch (m_orderStatus){
@@ -189,23 +269,47 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	//设置订单概要信息
 	private void setOrderHeadInfo() {
 		try {
+
 			//获取传过来的订单参数
 			JSONObject orderJson = m_OrderJson;
-			String strOrderSn = "订单号："+orderJson.get("orderSn").toString();
+			String strOrderSn = "订单编号："+orderJson.get("orderSn").toString();
 			m_textViewOrderSn.setText(strOrderSn);
+
+			String strCreateTime = "下单时间："+orderJson.get("createTime").toString();
+			m_textViewCreateTime.setText(strCreateTime);
+			m_orderCreateTime = orderJson.get("createTime").toString();
+
 
 			//获取订单用户
 			JSONObject customerJson = orderJson.getJSONObject("customer");
-			String strUserInfo = "用户名："+customerJson.get("userId").toString()+" | 收件人："+orderJson.get("recvName").toString()+"  |  电话："+orderJson.get("recvPhone").toString();
-			m_textViewUserInfo.setText(strUserInfo);
+			String strUserId = "联系人："+orderJson.get("recvName").toString();
+			String strUserPhone = "电话："+orderJson.get("recvPhone").toString();
+			m_textViewUserId.setText(strUserId);
+			m_textViewUserPhone.setText(strUserPhone);
+			m_currentCustomerId = customerJson.get("userId").toString();
 
-			String strCreateTime = "创建时间："+orderJson.get("createTime").toString();
-			m_textViewCreateTime.setText(strCreateTime);
+
+			//获取地址
 
 			JSONObject addressJson = orderJson.getJSONObject("recvAddr");
 			String strAddress = "地址："+addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
 			m_textViewAddress.setText(strAddress);
 			m_recvAddr = strAddress;
+
+			//判断是不是气票用户
+			//获取结算类型
+			JSONObject curUserSettlementType = customerJson.getJSONObject("settlementType");
+			if(curUserSettlementType.get("code").toString().equals("00003")) {//气票
+				m_imageViewUserIcon.setImageResource(R.drawable.icon_ticket_user_white);
+				m_isTicketUser = true;
+			}else if(curUserSettlementType.get("code").toString().equals("00002")) {//月结
+				m_imageViewUserIcon.setImageResource(R.drawable.icon_month_user_white);
+				m_isTicketUser = false;
+			} else{
+				m_imageViewUserIcon.setImageResource(R.drawable.icon_common_user_white);
+				m_isTicketUser = false;
+			}
+
 		}catch (JSONException e){
 			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
@@ -215,6 +319,9 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	//设置商品详情
 	private void setOrderDetailsInfo() {
 		try {
+			int iTotalQuantity = 0;
+			//订单总价
+			m_textViewTotalMount.setText("￥"+m_OrderJson.getString("orderAmount"));
 			//获取传过来的任务订单参数
 			JSONObject orderJson = m_OrderJson;
 			JSONArray orderDetailList = orderJson.getJSONArray("orderDetailList");
@@ -228,8 +335,13 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 				orderInfo.put("goodQuantity", "X"+orderDetail.get("quantity").toString());  //收货地址
 				orderInfo.put("dealPrice", "￥"+orderDetail.get("dealPrice").toString());  //用户信息
 
+				int iTempQuantity = Integer.parseInt(orderDetail.get("quantity").toString());
+				iTotalQuantity+=iTempQuantity;
+
 				list_map.add(orderInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 			}
+			//订单商品总数量
+			m_textViewTotalQuantity.setText(Integer.toString(iTotalQuantity));
 			//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
 			SimpleAdapter simpleAdapter = new SimpleAdapter(
 					OrderDetailActivity.this,/*传入一个上下文作为参数*/
@@ -459,6 +571,66 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	@Override
 	public void onExitPage(int i) {
 
+	}
+
+	//查询用户欠款
+	private boolean getCustomerCredit() {
+		if(m_isTicketUser){
+			String payTypeInfo = "用户欠款：￥0";
+			m_textViewPayTypeInfo.setText(payTypeInfo);
+			return true;
+		}
+
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+
+		nrc.requestUrl = NetUrlConstant.CUSTOMERCREDITURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("userId",m_currentCustomerId);
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							try {
+								JSONObject creditJsonObject = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray m_creditJsonArray = creditJsonObject.getJSONArray("items");
+								if(m_creditJsonArray.length()==1){
+									JSONObject creditJson = m_creditJsonArray.getJSONObject(0);
+									JSONObject creditType = creditJson.getJSONObject("creditType");
+
+									String payTypeInfo = "用户欠款：￥"+creditJson.get("amount").toString();
+									m_textViewPayTypeInfo.setText(payTypeInfo);
+								}else{
+									Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败!不存在用户:"+m_currentCustomerId,
+											Toast.LENGTH_LONG).show();
+								}
+							}catch (IOException e){
+								Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败！，异常IOException",
+										Toast.LENGTH_LONG).show();
+							}catch (JSONException e) {
+								Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败！，异常JSONException",
+										Toast.LENGTH_LONG).show();
+							}
+						}else{
+							Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败！，错误"+response.getStatusLine().getStatusCode(),
+									Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败！，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(OrderDetailActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+		return true;
 	}
 
 }
