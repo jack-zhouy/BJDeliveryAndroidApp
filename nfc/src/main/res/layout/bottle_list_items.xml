@@ -9,7 +9,7 @@
         android:id="@+id/items_imageView1"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="15dp"
         android:src="@drawable/icon_bottle" />
     <TextView
         android:id="@+id/items_number"

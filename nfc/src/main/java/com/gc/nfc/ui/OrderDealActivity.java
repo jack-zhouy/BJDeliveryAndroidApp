@@ -206,7 +206,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 			//获取商品总价
 			m_totalFee = m_OrderJson.get("orderAmount").toString();
-			m_textViewTotalFee.setText(m_totalFee);
+			m_textViewTotalFee.setText("￥"+m_totalFee);
 
 
 			swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.main_srl);
@@ -316,7 +316,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			InputStream is = link.openStream();
 			Bitmap bitmap = BitmapFactory.decodeStream( is );
 			QRcode.setImageBitmap(bitmap);
-			builder.setIcon(R.mipmap.ic_launcher);//设置对话框icon
+			builder.setIcon(R.drawable.icon_logo);//设置对话框icon
 
 			builder.setTitle("支付码");
 

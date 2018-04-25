@@ -17,9 +17,9 @@ import android.widget.Toast;
 
 public class MineActivity extends BaseActivity implements OnClickListener {
 
-	private ImageView iv_mine1;// 通知
 	private LinearLayout lL_myBottle;// 我的气瓶
 	private LinearLayout lL_myHistoryOrders;//历史订单
+	private LinearLayout lL_mySetting;//设置
 
 	private TextView textview_username;
 	private AppContext appContext;
@@ -52,6 +52,10 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 				intent.putExtras(bundle);
 				startActivity(intent);
 				break;
+			case R.id.lL_mySetting:// 系统设置
+				Toast.makeText(MineActivity.this, "敬请期待！",
+						Toast.LENGTH_LONG).show();
+				break;
 			default:
 				break;
 		}
@@ -61,15 +65,16 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 	@Override
 	void init() {
 		setContentView(R.layout.activity_mine);
-		iv_mine1 = (ImageView) findViewById(R.id.iV_mine1);
-
 		lL_myBottle = (LinearLayout) findViewById(R.id.lL_myBottle);// 我的气瓶
 		lL_myHistoryOrders = (LinearLayout) findViewById(R.id.lL_myHistoryOrders);//历史订单
+		lL_mySetting = (LinearLayout) findViewById(R.id.lL_mySetting);//历史订单
+
 		textview_username = (TextView) findViewById(R.id.textview_username);
 
 
 		lL_myBottle.setOnClickListener(this);
 		lL_myHistoryOrders.setOnClickListener(this);
+		lL_mySetting.setOnClickListener(this);
 
 	}
 }

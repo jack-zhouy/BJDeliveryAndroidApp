@@ -108,27 +108,27 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		img_validorders=(ImageView) findViewById(R.id.img_vaildorders);
 		img_myorders=(ImageView) findViewById(R.id.img_myorders);
 		img_mine=(ImageView) findViewById(R.id.img_mine);
-		img_more=(ImageView) findViewById(R.id.img_more);
+//		img_more=(ImageView) findViewById(R.id.img_more);
 
 		img_validorders.setOnClickListener(this);
 		img_myorders.setOnClickListener(this);
 		img_mine.setOnClickListener(this);
-		img_more.setOnClickListener(this);
+//		img_more.setOnClickListener(this);
 
 		text_validorders=(TextView) findViewById(R.id.text_vaildorders);
 		text_myorders=(TextView) findViewById(R.id.text_myorders);
 		text_mine=(TextView) findViewById(R.id.text_mine);
-		text_more=(TextView) findViewById(R.id.text_more);
+//		text_more=(TextView) findViewById(R.id.text_more);
 
 		linearlayout_validorders=(LinearLayout) findViewById(R.id.linearlayout_vaildorders);
 		linearlayout_myorders=(LinearLayout) findViewById(R.id.linearlayout_myorders);
 		linearlayout_mine=(LinearLayout) findViewById(R.id.linearlayout_mine);
-		linearlayout_more=(LinearLayout) findViewById(R.id.linearlayout_more);
+//		linearlayout_more=(LinearLayout) findViewById(R.id.linearlayout_more);
 
 		linearlayout_validorders.setOnClickListener(this);
 		linearlayout_myorders.setOnClickListener(this);
 		linearlayout_mine.setOnClickListener(this);
-		linearlayout_more.setOnClickListener(this);
+//		linearlayout_more.setOnClickListener(this);
 	}
 
 	private void setValidOrdersTab() {
@@ -175,8 +175,8 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 				text_myorders.setTextColor(getResources().getColor(R.color.textgray));
 				img_mine.setBackgroundResource(R.drawable.ic_menu_user_off);
 				text_mine.setTextColor(getResources().getColor(R.color.textgray));
-				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
-				text_more.setTextColor(getResources().getColor(R.color.textgray));
+//				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
+//				text_more.setTextColor(getResources().getColor(R.color.textgray));
 				break;
 //
 			case R.id.linearlayout_myorders:
@@ -188,8 +188,8 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 				text_myorders.setTextColor(getResources().getColor(R.color.green));
 				img_mine.setBackgroundResource(R.drawable.ic_menu_user_off);
 				text_mine.setTextColor(getResources().getColor(R.color.textgray));
-				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
-				text_more.setTextColor(getResources().getColor(R.color.textgray));
+//				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
+//				text_more.setTextColor(getResources().getColor(R.color.textgray));
 				break;
 
 			case R.id.linearlayout_mine:
@@ -201,8 +201,8 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 				text_myorders.setTextColor(getResources().getColor(R.color.textgray));
 				img_mine.setBackgroundResource(R.drawable.ic_menu_user_on);
 				text_mine.setTextColor(getResources().getColor(R.color.green));
-				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
-				text_more.setTextColor(getResources().getColor(R.color.textgray));
+//				img_more.setBackgroundResource(R.drawable.ic_menu_more_off);
+//				text_more.setTextColor(getResources().getColor(R.color.textgray));
 				break;
 
 //		case R.id.linearlayout_more:
@@ -263,12 +263,39 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 
 
 	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			exit();
+	public boolean dispatchKeyEvent(KeyEvent event)
+	{
+		if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 &&event.getAction() == KeyEvent.ACTION_DOWN)        {
+			new AlertDialog.Builder(MainlyActivity.this).setTitle("提示")
+					.setMessage("确认退出吗？")
+					.setIcon(R.drawable.icon_logo)
+					.setPositiveButton("确定",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
+								}
+							})
+					.setNegativeButton("取消",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+
+								}
+							})
+					.show();
 			return false;
 		}
-		return super.onKeyDown(keyCode, event);
+		else
+		{
+			return super.dispatchKeyEvent(event);
+		}
 	}
 
 	public void exit() {

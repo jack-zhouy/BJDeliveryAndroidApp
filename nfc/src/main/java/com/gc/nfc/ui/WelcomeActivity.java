@@ -20,6 +20,10 @@ import android.os.Message;
 public class WelcomeActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        if (!isTaskRoot()) {
+            finish();
+            return;
+        }
         super.onCreate(savedInstanceState);
         //隐藏标题栏以及状态栏
         /**全屏设置，隐藏窗口所有装饰**/

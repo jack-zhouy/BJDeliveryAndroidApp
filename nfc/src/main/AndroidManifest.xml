@@ -74,7 +74,7 @@
             android:label="首页"/>
         <activity android:name=".ui.MainlyActivity"
             android:screenOrientation="portrait"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:label="首页"/>
         <activity android:name=".ui.MineActivity"
             android:screenOrientation="portrait"

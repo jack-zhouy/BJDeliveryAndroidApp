@@ -12,7 +12,7 @@
         <TextView
             android:id="@+id/items_orderSn"
             android:layout_width="wrap_content"
-            android:layout_height="20dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginLeft="16dp"
             android:textSize="18sp"
@@ -20,7 +20,7 @@
         <TextView
             android:id="@+id/items_creatTime"
             android:layout_width="wrap_content"
-            android:layout_height="20dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginTop="10dp"
             android:layout_marginLeft="16dp"
@@ -51,7 +51,7 @@
         <TextView
             android:id="@+id/items_userId"
             android:layout_width="wrap_content"
-            android:layout_height="15dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginLeft="5dp"
             android:layout_marginTop="8dp"
@@ -61,7 +61,7 @@
         <TextView
             android:id="@+id/items_userPhone"
             android:layout_width="wrap_content"
-            android:layout_height="15dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginTop="8dp"
             android:textSize="14sp"
@@ -107,6 +107,7 @@
         android:id="@+id/items_orderStatus"
         android:layout_width="80dp"
         android:layout_height="35dp"
+        android:layout_marginTop="8dp"
         android:layout_marginRight="10dp"
         android:layout_alignParentRight="true"
         android:background="@drawable/ratio_button"

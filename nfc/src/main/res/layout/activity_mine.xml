@@ -5,28 +5,6 @@
     android:background="@color/backgroundcolor"
     android:orientation="vertical" >
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:background="@color/green"
-        android:orientation="horizontal" >
-
-        <ImageView
-            android:id="@+id/iV_mine"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentLeft="true"
-            android:src="@drawable/icon_user" />
-
-        <ImageView
-            android:id="@+id/iV_mine1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:src="@drawable/actionbar_message_disable" />
-    </RelativeLayout>
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -42,9 +20,9 @@
             <LinearLayout
                 android:id="@+id/lL_mine2"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="120dp"
                 android:layout_weight="1"
-                android:background="@drawable/bg_login"
+                android:background="@color/colorPrimaryDark"
                 android:gravity="center_vertical"
                 android:orientation="vertical"
                 android:visibility="visible">
@@ -60,20 +38,23 @@
                         android:layout_marginTop="10dp"
                         android:layout_width="84dp"
                         android:layout_height="74dp"
-                        android:src="@drawable/icon_userlogo" />
+                        android:src="@drawable/icon_default_user" />
 
                     <TextView
                         android:id="@+id/textview_username"
-                        android:layout_marginTop="35dp"
+                        android:layout_marginTop="30dp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginLeft="20dp"
+                        android:textSize="25sp"
+                        android:textColor="@color/white"
                         android:text="账户" />
 
-                    <ImageView
-                        android:layout_marginTop="35dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/ic_user_growth_0" />
+                    <!--<ImageView-->
+                        <!--android:layout_marginTop="35dp"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:src="@drawable/ic_user_growth_0" />-->
                 </LinearLayout>
 
             </LinearLayout>
@@ -90,7 +71,7 @@
                 android:orientation="horizontal">
 
                 <RelativeLayout
-                    android:id="@+id/rL_mine"
+                    android:id="@+id/integration"
                     android:layout_width="wrap_content"
                     android:layout_height="60dp"
                     android:layout_marginLeft="5dp"
@@ -134,7 +115,7 @@
                     android:background="@color/textgray" />
 
                 <RelativeLayout
-                    android:id="@+id/rL_mine1"
+                    android:id="@+id/reward"
                     android:layout_width="wrap_content"
                     android:layout_height="60dp"
                     android:layout_marginLeft="5dp"
@@ -163,11 +144,11 @@
                         android:layout_height="30dp"
                         android:layout_alignParentBottom="true"
                         android:layout_gravity="center"
-                        android:layout_marginLeft="13dp"
-                        android:layout_marginStart="13dp"
+                        android:layout_marginLeft="20dp"
+                        android:layout_marginStart="20dp"
                         android:layout_toEndOf="@+id/imageview_mycollect"
                         android:layout_toRightOf="@+id/imageview_mycollect"
-                        android:text="我的余额" />
+                        android:text="奖励" />
                 </RelativeLayout>
             </LinearLayout>
 
@@ -242,7 +223,7 @@
                     android:layout_width="34dp"
                     android:layout_height="38dp"
                     android:layout_marginLeft="10dp"
-                    android:src="@drawable/icon_order" />
+                    android:src="@drawable/icon_history_orser" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -292,49 +273,49 @@
                     android:textSize="15sp" />
 
             </LinearLayout>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="30dp"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:text="其他"
-                android:textSize="15sp" />
+            <!--<TextView-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_marginTop="30dp"-->
+                <!--android:layout_weight="1"-->
+                <!--android:gravity="center_vertical"-->
+                <!--android:text="其他"-->
+                <!--android:textSize="15sp" />-->
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:layout_marginTop="5dp"
-                android:background="@color/textgray" />
+            <!--<TextView-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="0.5dp"-->
+                <!--android:layout_marginTop="5dp"-->
+                <!--android:background="@color/textgray" />-->
 
-            <LinearLayout
-                android:id="@+id/lL_mine7"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_weight="1"
-                android:orientation="horizontal">
+            <!--<LinearLayout-->
+                <!--android:id="@+id/lL_mine7"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_marginTop="10dp"-->
+                <!--android:layout_weight="1"-->
+                <!--android:orientation="horizontal">-->
 
-                <ImageView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:src="@drawable/ic_voucher_enabled" />
+                <!--<ImageView-->
+                    <!--android:layout_width="wrap_content"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:layout_marginLeft="10dp"-->
+                    <!--android:src="@drawable/ic_voucher_enabled" />-->
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:text="代金券"
-                    android:textSize="15sp" />
+                <!--<TextView-->
+                    <!--android:layout_width="wrap_content"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:layout_marginLeft="10dp"-->
+                    <!--android:text="代金券"-->
+                    <!--android:textSize="15sp" />-->
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
-                    android:gravity="right"
-                    android:text="0" />
-            </LinearLayout>
+                <!--<TextView-->
+                    <!--android:layout_width="match_parent"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:layout_marginRight="10dp"-->
+                    <!--android:gravity="right"-->
+                    <!--android:text="0" />-->
+            <!--</LinearLayout>-->
         </LinearLayout>
     </ScrollView>
 

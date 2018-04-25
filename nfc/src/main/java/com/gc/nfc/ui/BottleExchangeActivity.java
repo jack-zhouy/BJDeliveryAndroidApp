@@ -106,6 +106,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	private int m_selected_nfc_model;//0--空瓶 1--重瓶
 
+	Bundle m_bundle;//上个activity传过来的参数
+
 	@Override
 	protected void onStart() {
 		super.onStart();
@@ -166,6 +168,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			//获取传过来的任务订单参数
 			Bundle bundle = new Bundle();
 			bundle = this.getIntent().getExtras();
+			m_bundle = bundle;
 			String  strOrder = bundle.getString("order");
 			m_OrderJson = new JSONObject(strOrder);
 
@@ -286,26 +289,14 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
+				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
+						Toast.LENGTH_LONG).show();
 				bottleTakeOver();
-				try {
-					m_buttonNext.setText("正在提交...");
-					Thread.currentThread().sleep(1000);//阻断2秒
-					if(m_takeOverCount == (m_BottlesListKP.size()+m_BottlesListZP.size())){
-						Intent intent = new Intent();
-						//将传过来的任务订单参数传到下一个页面
-						Bundle bundle = new Bundle();
-						bundle = this.getIntent().getExtras();
-						intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
-						intent.putExtras(bundle);
-						startActivity(intent);
-					}else{
-						Toast.makeText(BottleExchangeActivity.this, "提交超时，请重新提交！",
-								Toast.LENGTH_LONG).show();
-					}
-					m_buttonNext.setText("下一步");
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+				m_buttonNext.setText("正在提交...");
+				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
+				m_buttonNext.setEnabled(false);
+				handler.sendEmptyMessageDelayed(0,3000);
+
 
 				break;
 			case R.id.imageView_KPEYE:// 用户的气瓶
@@ -681,6 +672,25 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			}
 		}, nrc);
 	}
-
+	private Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			//判断交接是否成功，成功就跳转
+			if(m_takeOverCount == (m_BottlesListKP.size()+m_BottlesListZP.size())){
+				Intent intent = new Intent();
+				//将传过来的任务订单参数传到下一个页面
+				intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
+				intent.putExtras(m_bundle);
+				startActivity(intent);
+			}else{
+				Toast.makeText(BottleExchangeActivity.this, "提交超时，请重新提交！",
+						Toast.LENGTH_LONG).show();
+			}
+			m_buttonNext.setText("下一步");
+			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+			m_buttonNext.setEnabled(true);
+			super.handleMessage(msg);
+		}
+	};
 
 }

@@ -156,14 +156,14 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 		long min = diff % nd % nh / nm;
 		// 计算差多少秒//输出结果
 		long sec = diff % nd % nh % nm / ns;
-		return hour + "-" + min + "-" + sec;
+		return hour + "时-" + min + "分-" + sec+ "秒";
 	}
 	private void calculatePassedTime(){
 		try {
 			Date now = new Date();
 			SimpleDateFormat simFormat = new SimpleDateFormat("yyyy-MM-d HH:mm:ss");
 			Date before = simFormat.parse(m_orderCreateTime);
-			m_textViewPassedTime.setText("已过时间:"+getDatePoor(now, before));
+			m_textViewPassedTime.setText("已过: "+getDatePoor(now, before));
 		}catch (ParseException e){
 			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
@@ -282,7 +282,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 			//获取订单用户
 			JSONObject customerJson = orderJson.getJSONObject("customer");
-			String strUserId = "联系人："+orderJson.get("recvName").toString();
+			String strUserId = orderJson.get("recvName").toString();
 			String strUserPhone = "电话："+orderJson.get("recvPhone").toString();
 			m_textViewUserId.setText(strUserId);
 			m_textViewUserPhone.setText(strUserPhone);
@@ -292,7 +292,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			//获取地址
 
 			JSONObject addressJson = orderJson.getJSONObject("recvAddr");
-			String strAddress = "地址："+addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
+			String strAddress = addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
 			m_textViewAddress.setText(strAddress);
 			m_recvAddr = strAddress;
 
@@ -576,7 +576,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	//查询用户欠款
 	private boolean getCustomerCredit() {
 		if(m_isTicketUser){
-			String payTypeInfo = "用户欠款：￥0";
+			String payTypeInfo = "欠款：￥0";
 			m_textViewPayTypeInfo.setText(payTypeInfo);
 			return true;
 		}
@@ -603,7 +603,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 									JSONObject creditJson = m_creditJsonArray.getJSONObject(0);
 									JSONObject creditType = creditJson.getJSONObject("creditType");
 
-									String payTypeInfo = "用户欠款：￥"+creditJson.get("amount").toString();
+									String payTypeInfo = "欠款：￥"+creditJson.get("amount").toString();
 									m_textViewPayTypeInfo.setText(payTypeInfo);
 								}else{
 									Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败!不存在用户:"+m_currentCustomerId,
