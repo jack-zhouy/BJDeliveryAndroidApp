@@ -87,8 +87,8 @@ import java.net.URL;
 import java.util.Set;
 
 import java.util.Random;
-
-
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 public class OrderDealActivity extends BaseActivity implements OnClickListener,AbsListView.OnScrollListener  {
 
 	AlertDialog m_alertDialogTicketSelect;//气票选择窗口
@@ -898,7 +898,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 				String goodCode = ticketDetail.get("specCode").toString();
 				int tempCount = 1;
 				if(ticketCouponMapQuantity.containsKey(goodCode)){
-					int totalCount = goodsMapQuantity.get(goodCode);
+					int totalCount = ticketCouponMapQuantity.get(goodCode);
 					totalCount += tempCount;
 					ticketCouponMapQuantity.remove(goodCode);
 					ticketCouponMapQuantity.put(goodCode,totalCount);
@@ -984,31 +984,52 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 			getServer(new Netcallback() {
 				public void preccess(Object res, boolean flag) {
-					if(flag){
-						HttpResponse response=(HttpResponse)res;
-						if(response!=null){
-							if(response.getStatusLine().getStatusCode()==200){
-								//完成配送
-								deliverOver();
-							}else if(response.getStatusLine().getStatusCode()==404){
-								Toast.makeText(OrderDealActivity.this, "订单不存在",
-										Toast.LENGTH_LONG).show();
-							} else{
-								Toast.makeText(OrderDealActivity.this, "支付失败",
+					try{
+						if (flag) {
+							HttpResponse response = (HttpResponse) res;
+							BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
+									.getContent()));
+							StringBuffer sb = new StringBuffer("");
+							String line = "";
+							String NL = System.getProperty("line.separator");
+							while ((line = in.readLine()) != null) {
+								sb.append(line + NL);
+							}
+							in.close();
+							String responseBody = sb.toString();
+							JSONObject errorDetailJson = new JSONObject(responseBody);
+							if (response != null) {
+								if (response.getStatusLine().getStatusCode() == 200) {
+									//完成配送
+									deliverOver();
+								} else if (response.getStatusLine().getStatusCode() == 404) {
+									String errorDetail = errorDetailJson.get("message").toString();
+									Toast.makeText(OrderDealActivity.this, "订单不存在" + errorDetail,
+											Toast.LENGTH_LONG).show();
+								} else {
+									String errorDetail = errorDetailJson.get("message").toString();
+									Toast.makeText(OrderDealActivity.this, "支付失败" + errorDetail,
+											Toast.LENGTH_LONG).show();
+								}
+							} else {
+
+								Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
 										Toast.LENGTH_LONG).show();
 							}
-						}else {
-							Toast.makeText(OrderDealActivity.this, "未知错误，异常！",
+						} else {
+							Toast.makeText(OrderDealActivity.this, "网络未连接！",
 									Toast.LENGTH_LONG).show();
 						}
-					} else {
-						Toast.makeText(OrderDealActivity.this, "网络未连接！",
+					}catch (IOException e){
+						Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
+								Toast.LENGTH_LONG).show();
+					}catch (JSONException e){
+						Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
 								Toast.LENGTH_LONG).show();
 					}
 				}
 			}, nrc);
 			return true;
-
 		}catch (JSONException e){
 			Toast.makeText(OrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();

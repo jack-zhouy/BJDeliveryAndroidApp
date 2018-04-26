@@ -36,7 +36,7 @@
     <!-- 更改设置 -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
 
     <!-- 要求当前设备必须要有NFC芯片 -->

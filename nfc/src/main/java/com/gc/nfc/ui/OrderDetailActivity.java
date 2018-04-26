@@ -63,13 +63,14 @@ import com.amap.api.navi.model.AMapNaviLocation;
 
 
 
-import java.util.ArrayList;
-import java.util.List;
-
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import android.net.Uri;
+import android.support.v4.app.ActivityCompat;
+import android.provider.Settings;
 
-
+import android.Manifest;
+import android.content.pm.PackageManager;
 public class OrderDetailActivity extends BaseActivity implements OnClickListener, INaviInfoCallback {
 
 	private TextView m_textViewOrderSn;//订单号
@@ -101,6 +102,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 	private Button m_buttonNext;//下一步
 	private ImageView m_imageViewNav;//导航
+	private ImageView m_imageViewCall;//电话
 
 	private AppContext appContext;
 
@@ -121,6 +123,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	private String m_orderCreateTime;//订单创建时间
 
 	private java.util.Timer timer;
+
+	private String m_customerPhone;//客户电话
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -156,14 +160,14 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 		long min = diff % nd % nh / nm;
 		// 计算差多少秒//输出结果
 		long sec = diff % nd % nh % nm / ns;
-		return hour + "时-" + min + "分-" + sec+ "秒";
+		return hour + ":" + min + ":" + sec;
 	}
 	private void calculatePassedTime(){
 		try {
 			Date now = new Date();
 			SimpleDateFormat simFormat = new SimpleDateFormat("yyyy-MM-d HH:mm:ss");
 			Date before = simFormat.parse(m_orderCreateTime);
-			m_textViewPassedTime.setText("已过: "+getDatePoor(now, before));
+			m_textViewPassedTime.setText("已过 "+getDatePoor(now, before));
 		}catch (ParseException e){
 			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
@@ -199,6 +203,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_textViewPayTypeInfo= (TextView) findViewById(R.id.items_userCredit);
 			m_listView = (ListView) findViewById(R.id.listview);
 			m_imageViewNav = (ImageView) findViewById(R.id.imageView_nav);
+			m_imageViewCall = (ImageView) findViewById(R.id.imageView_call);
+
 
 			m_textViewPayStatus = (TextView) findViewById(R.id.textview_payStatus);
 			m_textViewOrderStatus = (TextView) findViewById(R.id.textview_orderStatus);
@@ -214,6 +220,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 			m_buttonNext.setOnClickListener(this);
 			m_imageViewNav.setOnClickListener(this);
+
+			m_imageViewCall.setOnClickListener(this);
 
 
 			//数据初始化
@@ -287,6 +295,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_textViewUserId.setText(strUserId);
 			m_textViewUserPhone.setText(strUserPhone);
 			m_currentCustomerId = customerJson.get("userId").toString();
+			m_customerPhone = strUserPhone;
 
 
 			//获取地址
@@ -428,6 +437,9 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 				break;
 			case R.id.imageView_nav://导航
 				switchNavBar();
+				break;
+			case R.id.imageView_call://打电话
+				callPhone(m_customerPhone);
 				break;
 			default:
 				break;
@@ -625,12 +637,47 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 								Toast.LENGTH_LONG).show();
 					}
 				} else {
-					Toast.makeText(OrderDetailActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
+					Toast.makeText(OrderDetailActivity.this, "网络未连接！", Toast.LENGTH_LONG).show();
 				}
 			}
 		}, nrc);
 		return true;
+	}
+
+	/**
+	 * 拨打电话（直接拨打电话）
+	 *
+	 * @param phoneNum 电话号码
+	 */
+	public void callPhone(String phoneNum) {
+		// 检查是否获得了权限（Android6.0运行时权限）
+		if (ActivityCompat.checkSelfPermission(OrderDetailActivity.this,Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED){
+// 没有获得授权，申请授权
+			if (ActivityCompat.shouldShowRequestPermissionRationale(OrderDetailActivity.this,Manifest.permission.CALL_PHONE)) {
+// 返回值：
+//如果app之前请求过该权限,被用户拒绝, 这个方法就会返回true.
+//如果用户之前拒绝权限的时候勾选了对话框中”Don’t ask again”的选项,那么这个方法会返回false.
+//如果设备策略禁止应用拥有这条权限, 这个方法也返回false.
+// 弹窗需要解释为何需要该权限，再次请求授权
+				Toast.makeText(OrderDetailActivity.this, "请授权！", Toast.LENGTH_LONG).show();
+// 帮跳转到该应用的设置界面，让用户手动授权
+				Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+				Uri uri = Uri.fromParts("package", getPackageName(), null);
+				intent.setData(uri);
+				startActivity(intent);
+			}else{
+// 不需要解释为何需要该权限，直接请求授权
+				ActivityCompat.requestPermissions(OrderDetailActivity.this,new String[]{Manifest.permission.CALL_PHONE},1);
+			}
+		}else {
+// 已经获得授权，可以打电话
+			Intent intent = new Intent(Intent.ACTION_CALL);
+			Uri data = Uri.parse("tel:" + phoneNum);
+			intent.setData(data);
+			startActivity(intent);
+		}
+
+
 	}
 
 }

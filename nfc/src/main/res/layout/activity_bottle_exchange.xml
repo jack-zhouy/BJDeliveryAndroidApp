@@ -148,7 +148,7 @@
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
                         android:gravity="center_vertical"
-                        android:text="重瓶回收"
+                        android:text="重瓶录入"
                         android:textSize="20sp"
                         android:textColor="@color/black"/>
 

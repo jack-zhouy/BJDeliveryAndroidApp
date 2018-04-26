@@ -9,22 +9,22 @@
         android:id="@+id/items_imageView1"
         android:layout_width="45dp"
         android:layout_height="45dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginLeft="0dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginLeft="10dp"
         android:src="@drawable/icon_coupon" />
     <TextView
         android:id="@+id/items_baseInfo"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="50dp"
+        android:layout_toRightOf="@+id/items_imageView1"
         android:layout_marginTop="5dp"
         android:textColor="@color/transparent_background" />
     <TextView
         android:id="@+id/items_validTime"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="50dp"
-        android:layout_marginTop="25dp"
+        android:layout_toRightOf="@+id/items_imageView1"
+        android:layout_below="@+id/items_baseInfo"
         android:textColor="@color/transparent_background" />
 
 </RelativeLayout>
