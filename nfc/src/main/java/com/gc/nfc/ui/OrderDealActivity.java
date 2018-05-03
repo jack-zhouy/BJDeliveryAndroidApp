@@ -997,6 +997,11 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 							}
 							in.close();
 							String responseBody = sb.toString();
+
+							if(responseBody.equals("")){
+								responseBody = "{\"message\":\"no value\"}";
+							}
+
 							JSONObject errorDetailJson = new JSONObject(responseBody);
 							if (response != null) {
 								if (response.getStatusLine().getStatusCode() == 200) {

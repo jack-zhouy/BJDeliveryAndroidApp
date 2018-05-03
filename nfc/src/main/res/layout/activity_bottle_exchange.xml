@@ -95,6 +95,32 @@
                         android:layout_marginTop="10dp"
                         android:src="@drawable/icon_setting" />
                 </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:orientation="horizontal">
+                    <EditText
+                        android:id="@+id/input_bottleIdKP"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#00000000"
+                        android:hint="手动输入钢瓶号"
+                        android:layout_marginTop="10dp"
+                        android:layout_toLeftOf="@+id/imageView_addKPManual"
+                        android:textSize="16sp" />
+                    <ImageView
+                        android:id="@+id/imageView_addKPManual"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginRight="10dp"
+                        android:layout_marginTop="10dp"
+                        android:src="@drawable/icon_add" />
+                </RelativeLayout>
+
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="0.5dp"
@@ -160,6 +186,29 @@
                         android:layout_marginRight="10dp"
                         android:layout_marginTop="10dp"
                         android:src="@drawable/icon_setting" />
+                </RelativeLayout>
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:orientation="horizontal">
+                    <EditText
+                        android:id="@+id/input_bottleIdZP"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#00000000"
+                        android:hint="手动输入钢瓶号"
+                        android:layout_marginTop="10dp"
+                        android:layout_toLeftOf="@+id/imageView_addZPManual"
+                        android:textSize="16sp" />
+                    <ImageView
+                        android:id="@+id/imageView_addZPManual"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginRight="10dp"
+                        android:layout_marginTop="10dp"
+                        android:src="@drawable/icon_add" />
                 </RelativeLayout>
                 <TextView
                     android:layout_width="match_parent"

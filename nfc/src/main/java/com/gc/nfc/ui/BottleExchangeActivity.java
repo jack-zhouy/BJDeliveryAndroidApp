@@ -29,6 +29,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -108,6 +109,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	Bundle m_bundle;//上个activity传过来的参数
 
+	private EditText m_bottleIdKPEditText, m_bottleIdZPEditText;//手动输入空重瓶号
+	private ImageView m_imageAddKPManual; //手动输入空瓶号
+	private ImageView m_imageAddZPManual; //手动输入重瓶号
+
+
 	@Override
 	protected void onStart() {
 		super.onStart();
@@ -184,10 +190,18 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_textViewTotalCountKP = (TextView) findViewById(R.id.items_totalCountKP);
 			m_textViewTotalCountZP = (TextView) findViewById(R.id.items_totalCountZP);
 
+			m_bottleIdKPEditText = (EditText) findViewById(R.id.input_bottleIdKP);
+			m_bottleIdZPEditText = (EditText) findViewById(R.id.input_bottleIdZP);
+			m_imageAddKPManual = (ImageView) findViewById(R.id.imageView_addKPManual);
+			m_imageAddZPManual = (ImageView) findViewById(R.id.imageView_addZPManual);
+
+
 
 
 			m_imageViewZPEye.setOnClickListener(this);
 			m_imageViewKPEye.setOnClickListener(this);
+			m_imageAddKPManual.setOnClickListener(this);
+			m_imageAddZPManual.setOnClickListener(this);
 
 			m_buttonNext.setOnClickListener(this);
 			radioGroup_nfc.setOnCheckedChangeListener(listen);
@@ -198,6 +212,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_myBottlesMap = new HashMap<String, JSONObject>();
 			m_BottlesListKP = new ArrayList<String>();
 			m_BottlesListZP = new ArrayList<String>();
+
+
 
 			//获取当前配送工
 			appContext = (AppContext) getApplicationContext();
@@ -314,6 +330,15 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				intentZP.setClass(BottleExchangeActivity.this, MybottlesActivity.class);
 				intentZP.putExtras(bundleZP);
 				startActivity(intentZP);
+				break;
+
+			case R.id.imageView_addKPManual://手动添加空瓶号
+	            String bottleCodeKP = m_bottleIdKPEditText.getText().toString();
+				addKP(bottleCodeKP);
+				break;
+			case R.id.imageView_addZPManual://手动添加重瓶号
+				String bottleCodeZP = m_bottleIdZPEditText.getText().toString();
+				addZP(bottleCodeZP);
 				break;
 			default:
 				break;
@@ -438,39 +463,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 
 		if(m_selected_nfc_model==0){//空瓶录入模式
-			if(m_userBottlesMap.containsKey(bottleCode)){
-				boolean contained = false;
-				for(int i=0; i<m_BottlesListKP.size();i++){
-					if(m_BottlesListKP.get(i).equals(bottleCode)){
-						contained = true;
-						break;
-					}
-				}
-				if(!contained){//第一次扫
-					m_BottlesListKP.add(bottleCode);
-					refleshBottlesListKP();
-				}
-			}else{//非法钢瓶
-				Toast.makeText(BottleExchangeActivity.this, "空瓶录入：钢瓶号 "+bottleCode+"  非法！",
-						Toast.LENGTH_LONG).show();
-			}
+			addKP(bottleCode);
 
 		}else if(m_selected_nfc_model==1){//重瓶录入模式
-			if(m_myBottlesMap.containsKey(bottleCode)){
-				boolean contained = false;
-				for(int i=0; i<m_BottlesListZP.size();i++){
-					if(m_BottlesListZP.get(i).equals(bottleCode)){
-						contained = true;
-						break;
-					}
-				}if(!contained){//第一次扫
-					m_BottlesListZP.add(bottleCode);
-					refleshBottlesListZP();
-				}
-			}else{//非法钢瓶
-				Toast.makeText(BottleExchangeActivity.this, "重瓶录入：钢瓶号 "+bottleCode+"  非法！",
-						Toast.LENGTH_LONG).show();
-			}
+			addZP(bottleCode);
 		}
 	}
 
@@ -635,10 +631,12 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		//交接空瓶
 		for(int i=0; i<m_BottlesListKP.size(); i++){
 			bottleTakeOverUnit(m_BottlesListKP.get(i), m_curUserId, m_deliveryUser.getUsername(), "6");//空瓶回收
+			bottlesStatusZPtoKP(m_BottlesListKP.get(i));  //将重瓶状态转换为空瓶
 		}
 		//交接重瓶
 		for(int i=0; i<m_BottlesListZP.size(); i++){
 			bottleTakeOverUnit(m_BottlesListZP.get(i),  m_deliveryUser.getUsername(), m_curUserId,"5");//客户使用
+
 		}
 	}
 
@@ -660,6 +658,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==200){
 							m_takeOverCount++;
+
 						}
 					}else {
 						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
@@ -672,11 +671,14 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			}
 		}, nrc);
 	}
+
+
 	private Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
 			//判断交接是否成功，成功就跳转
 			if(m_takeOverCount == (m_BottlesListKP.size()+m_BottlesListZP.size())){
+				//交接成功
 				Intent intent = new Intent();
 				//将传过来的任务订单参数传到下一个页面
 				intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
@@ -692,5 +694,73 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			super.handleMessage(msg);
 		}
 	};
+
+
+	//单个钢瓶状态由重瓶转为空瓶
+	public void bottlesStatusZPtoKP(String bottleCode) {
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.PUT);
+		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL+"/"+bottleCode;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		Map<String, Object> body = new HashMap<String, Object>();
+		body.put("loadStatus","LSEmpty");//空瓶
+		nrc.setParams(params);
+		nrc.setBody(body);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+						}
+					}else {
+						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+	}
+
+	private void addKP(String bottleCode){
+		if(m_userBottlesMap.containsKey(bottleCode)){
+			boolean contained = false;
+			for(int i=0; i<m_BottlesListKP.size();i++){
+				if(m_BottlesListKP.get(i).equals(bottleCode)){
+					contained = true;
+					break;
+				}
+			}
+			if(!contained){//第一次扫
+				m_BottlesListKP.add(bottleCode);
+				refleshBottlesListKP();
+			}
+		}else{//非法钢瓶
+			Toast.makeText(BottleExchangeActivity.this, "空瓶录入：钢瓶号 "+bottleCode+"  非法！",
+					Toast.LENGTH_LONG).show();
+		}
+	}
+	private void addZP(String bottleCode) {
+		if (m_myBottlesMap.containsKey(bottleCode)) {
+			boolean contained = false;
+			for (int i = 0; i < m_BottlesListZP.size(); i++) {
+				if (m_BottlesListZP.get(i).equals(bottleCode)) {
+					contained = true;
+					break;
+				}
+			}
+			if (!contained) {//第一次扫
+				m_BottlesListZP.add(bottleCode);
+				refleshBottlesListZP();
+			}
+		} else {//非法钢瓶
+			Toast.makeText(BottleExchangeActivity.this, "重瓶录入：钢瓶号 " + bottleCode + "  非法！",
+					Toast.LENGTH_LONG).show();
+		}
+	}
 
 }
