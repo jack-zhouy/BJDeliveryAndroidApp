@@ -43,6 +43,8 @@ import android.view.ViewGroup.MarginLayoutParams;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.animation.Animator.AnimatorListener;
 
+import com.gc.nfc.utils.SharedPreferencesHelper;
+
 
 public class LoginActivity  extends BaseActivity implements OnClickListener {
 
@@ -82,14 +84,7 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 		m_userIdEditText = (EditText) findViewById(R.id.input_userId);
 		m_passwordEditText = (EditText) findViewById(R.id.input_password);
 
-
-
 		mBtnLogin.setOnClickListener(this);
-
-
-
-
-
 	}
 	private void inputAnimator(final View view, float w, float h) {
 
@@ -197,7 +192,12 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 								NetUtil.setLoginCookies();
 								JSONObject userJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
 								JSONObject groupJson = userJson.getJSONObject("userGroup");
+								JSONObject departmentJson =  userJson.getJSONObject("department");
+
 								String groupCode = groupJson.optString("code");
+								String groupName = groupJson.optString("name");
+								String departmentCode = departmentJson.optString("code");
+								String departmentName = departmentJson.optString("name");
 								if(groupCode.equals("00003")){
 									Intent data = new Intent();
 									data.putExtra("userId", username);
@@ -205,9 +205,15 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 									User user = new User();
 									user.setUsername(username);
 									user.setPassword(password);
+									user.setDepartmentCode(departmentCode);
+									user.setDepartmentName(departmentName);
+									user.setGroupCode(groupCode);
+									user.setGroupName(groupName);
 									appContext.setUser(user);
 									Toast.makeText(LoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
 									setResult(12, data);
+									SharedPreferencesHelper.put("username", username);
+									SharedPreferencesHelper.put("password", password);
 
 									MediaPlayer music = MediaPlayer.create(LoginActivity.this, R.raw.start_working);
 									music.start();
@@ -216,10 +222,9 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 									finish();
 
 								}else{
-									Toast.makeText(LoginActivity.this, "非配送账户，请更换！",
+									Toast.makeText(LoginActivity.this, "非配送工账户，请更换！",
 											Toast.LENGTH_LONG).show();
 								}
-
 							}catch (IOException e){
 								Toast.makeText(LoginActivity.this, "未知错误，异常！",
 										Toast.LENGTH_LONG).show();

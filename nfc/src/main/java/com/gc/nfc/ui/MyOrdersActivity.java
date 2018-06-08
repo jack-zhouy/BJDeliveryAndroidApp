@@ -121,8 +121,10 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
         AppContext appContext = (AppContext) getApplicationContext();
         User user = appContext.getUser();
         if (user == null) {
-            Toast.makeText(MyOrdersActivity.this, "请先登录!", Toast.LENGTH_LONG).show();
-            return;
+            Toast.makeText(MyOrdersActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(MyOrdersActivity.this, AutoLoginActivity.class);
+            startActivity(intent);
+            finish();
         }
         // get请求
         NetRequestConstant nrc = new NetRequestConstant();

@@ -45,16 +45,25 @@
                         android:layout_marginTop="30dp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="20dp"
-                        android:textSize="25sp"
+                        android:layout_marginRight="10dp"
+                        android:textSize="20sp"
                         android:textColor="@color/white"
+                        android:layout_weight="6"
                         android:text="账户" />
 
+                    <ImageView
+                        android:id="@+id/imageView_userQRcode"
+                        android:layout_marginTop="25dp"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:src="@drawable/icon_reflesh" />
+
                     <!--<ImageView-->
-                        <!--android:layout_marginTop="35dp"-->
-                        <!--android:layout_width="wrap_content"-->
-                        <!--android:layout_height="wrap_content"-->
-                        <!--android:src="@drawable/ic_user_growth_0" />-->
+                    <!--android:layout_marginTop="35dp"-->
+                    <!--android:layout_width="wrap_content"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:src="@drawable/ic_user_growth_0" />-->
                 </LinearLayout>
 
             </LinearLayout>
@@ -270,6 +279,29 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="10dp"
                     android:text="系统设置"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/lL_myLogout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="10dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="34dp"
+                    android:layout_height="38dp"
+                    android:layout_marginLeft="10dp"
+                    android:src="@drawable/icon_userlogo" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="退出登录"
                     android:textSize="15sp" />
 
             </LinearLayout>

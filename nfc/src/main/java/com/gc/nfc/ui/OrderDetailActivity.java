@@ -181,6 +181,13 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			//当前登录用户
 			appContext = (AppContext) getApplicationContext();
 			m_user = appContext.getUser();
+			if (m_user == null) {
+				Toast.makeText(OrderDetailActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+				Intent intent = new Intent(OrderDetailActivity.this, AutoLoginActivity.class);
+				startActivity(intent);
+				finish();
+				return;
+			}
 
 			//获取传过来的任务订单参数
 			Bundle bundle = new Bundle();
@@ -618,8 +625,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 									String payTypeInfo = "欠款：￥"+creditJson.get("amount").toString();
 									m_textViewPayTypeInfo.setText(payTypeInfo);
 								}else{
-									Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败!不存在用户:"+m_currentCustomerId,
-											Toast.LENGTH_LONG).show();
+									String payTypeInfo = "欠款：￥0";
+									m_textViewPayTypeInfo.setText(payTypeInfo);
 								}
 							}catch (IOException e){
 								Toast.makeText(OrderDetailActivity.this, "查询用户欠款失败！，异常IOException",

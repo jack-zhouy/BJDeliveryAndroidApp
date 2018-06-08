@@ -131,8 +131,10 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
         AppContext appContext = (AppContext) getApplicationContext();
         User user = appContext.getUser();
         if (user == null) {
-            Toast.makeText(ValidOrdersActivity.this, "请先登录!", Toast.LENGTH_LONG).show();
-            return;
+            Toast.makeText(ValidOrdersActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(ValidOrdersActivity.this, AutoLoginActivity.class);
+            startActivity(intent);
+            finish();
         }
         // get请求
         NetRequestConstant nrc = new NetRequestConstant();

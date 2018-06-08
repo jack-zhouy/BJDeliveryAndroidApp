@@ -117,7 +117,10 @@ public class HistoryOrdersActivity extends BaseActivity implements OnClickListen
         AppContext appContext = (AppContext) getApplicationContext();
         User user = appContext.getUser();
         if (user == null) {
-            Toast.makeText(HistoryOrdersActivity.this, "请先登录!", Toast.LENGTH_LONG).show();
+            Toast.makeText(HistoryOrdersActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(HistoryOrdersActivity.this, AutoLoginActivity.class);
+            startActivity(intent);
+            finish();
             return;
         }
         // get请求

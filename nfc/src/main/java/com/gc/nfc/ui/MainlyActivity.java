@@ -31,7 +31,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gc.nfc.utils.LocationUtils;
-import com.gc.nfc.utils.AmapLocationUtils;
+import com.gc.nfc.utils.AmapLocationService;
 import com.gc.nfc.utils.NetUtil;
 
 import android.view.KeyEvent;
@@ -96,7 +96,8 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		//开启定位任务
 		isOpenGPS();
 		//开启定位
-		AmapLocationUtils amapLocationUtils = new AmapLocationUtils(this);
+		final Intent intentService = new Intent(this,AmapLocationService.class);
+		startService(intentService);
 
 //		LocationUtils.setInstance(this);
 //		LocationUtils.isOpenGPS();

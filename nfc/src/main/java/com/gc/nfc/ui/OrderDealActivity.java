@@ -307,7 +307,9 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 		View view = View.inflate(this, R.layout.pay_on_scan, null);   // 账号、密码的布局文件，自定义
 		ImageView QRcode = (ImageView)view.findViewById(R.id.items_imageViewScanCode);
-		String  strUri = NetUrlConstant.PAYQRCODEURL+"?totalFee="+"1"+"&orderIndex="+m_businessKey;
+		double dPayMount = Double.parseDouble(m_totalFee)*100;
+		int iPayMount = (int) dPayMount;
+		String  strUri = NetUrlConstant.PAYQRCODEURL+"?totalFee="+iPayMount+"&orderIndex="+m_businessKey;
 
 
 
@@ -453,20 +455,12 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 		switch (v.getId()) {
 			case R.id.button_next:
 			{
-				if(m_orderPayStatus.equals("已支付")){
-					//完成配送
-					deliverOver();
-				}else{
-					if(m_isTicketUser){
-						if(isTicketsOrCouponsSelectedOK()){
-							ticketUserPay();
-						}else{
-							Toast.makeText(OrderDealActivity.this, "优惠券、气票选择与实际商品数量不匹配！", Toast.LENGTH_LONG).show();
-						}
-					}else{
-						commonUserPay();
-					}
-				}
+				Toast.makeText(OrderDealActivity.this, "正在提交，请稍等。。。",
+						Toast.LENGTH_LONG).show();
+				m_buttonNext.setText("正在提交...");
+				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
+				m_buttonNext.setEnabled(false);
+				handlerDelayCommit.sendEmptyMessageDelayed(0,1000);
 			}
 			break;
 			case R.id.imageView_ticketSelect:// 用户的气票
@@ -1191,8 +1185,12 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 							try {
 								JSONObject usersJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
 								JSONArray usersListJson = usersJson.getJSONArray("items");
-								if(usersListJson.length()>=1){
-									m_depLeader = usersListJson.getJSONObject(0).getString("userId");
+								for(int i=0; i<usersListJson.length(); i++){
+									if(i == 0){
+										m_depLeader = usersListJson.getJSONObject(i).getString("userId");
+									}else{
+										m_depLeader = m_depLeader+","+usersListJson.getJSONObject(i).getString("userId");
+									}
 								}
 							} catch (JSONException e) {
 								Toast.makeText(OrderDealActivity.this, "未知错误，异常！" + e.getMessage(),
@@ -1211,6 +1209,36 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 					}
 				}}}, nrc);
 	}
+
+	//延时提交，防止乱点
+	private Handler handlerDelayCommit = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			if(m_depLeader==null){
+				Toast.makeText(OrderDealActivity.this, "所属店长查询失败！",
+						Toast.LENGTH_LONG).show();
+				return;
+			}
+			if(m_orderPayStatus.equals("已支付")){
+				//完成配送
+				deliverOver();
+			}else{
+				if(m_isTicketUser){
+					if(isTicketsOrCouponsSelectedOK()){
+						ticketUserPay();
+					}else{
+						Toast.makeText(OrderDealActivity.this, "优惠券、气票选择与实际商品数量不匹配！", Toast.LENGTH_LONG).show();
+					}
+				}else{
+					commonUserPay();
+				}
+			}
+			m_buttonNext.setText("下一步");
+			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+			m_buttonNext.setEnabled(true);
+			super.handleMessage(msg);
+		}
+	};
 
 
 }

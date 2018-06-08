@@ -95,6 +95,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private JSONObject m_OrderJson;//订单详情
 	private String m_businessKey;//订单号
 
+	private String m_customerAddress;//用户地址
+
 
 	private String m_curUserId;//该订单用户
 	private JSONObject m_curUserSettlementType;//结算类型
@@ -218,6 +220,12 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			//获取当前配送工
 			appContext = (AppContext) getApplicationContext();
 			m_deliveryUser = appContext.getUser();
+			if (m_deliveryUser == null) {
+				Toast.makeText(BottleExchangeActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+				Intent intent = new Intent(BottleExchangeActivity.this, LoginActivity.class);
+				startActivity(intent);
+				finish();
+			}
 
 			//初始化两个LISTVIEW的点击事件
 			m_listView_kp.setOnItemLongClickListener(new OnItemLongClickListener() {
@@ -292,6 +300,12 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			//获取订单用户
 			JSONObject customerJson = m_OrderJson.getJSONObject("customer");
 			m_curUserId = customerJson.get("userId").toString();
+
+			JSONObject addressJson = m_OrderJson.getJSONObject("recvAddr");
+			m_customerAddress = addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
+
+
+
 
 		}catch (JSONException e){
 			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
@@ -398,12 +412,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	//获取配送工名下的瓶子
 	public void getMyBottles() {
 
-		AppContext appContext = (AppContext) getApplicationContext();
-		User user = appContext.getUser();
-		if (user == null) {
-			Toast.makeText(BottleExchangeActivity.this, "请先登录!", Toast.LENGTH_LONG).show();
-			return;
-		}
+
 		// get请求
 		NetRequestConstant nrc = new NetRequestConstant();
 		nrc.setType(HttpRequestType.GET);
@@ -411,7 +420,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
 		nrc.context = this;
 		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("liableUserId",user.getUsername() );//责任人是当前用户
+		params.put("liableUserId",m_deliveryUser.getUsername());//责任人是当前用户
 		nrc.setParams(params);
 		getServer(new Netcallback() {
 			public void preccess(Object res, boolean flag) {
@@ -628,20 +637,21 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//钢瓶责任交接
 	public void bottleTakeOver() {
+
 		//交接空瓶
 		for(int i=0; i<m_BottlesListKP.size(); i++){
-			bottleTakeOverUnit(m_BottlesListKP.get(i), m_curUserId, m_deliveryUser.getUsername(), "6");//空瓶回收
+			bottleTakeOverUnit(m_BottlesListKP.get(i), m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收");//空瓶回收
 			bottlesStatusZPtoKP(m_BottlesListKP.get(i));  //将重瓶状态转换为空瓶
 		}
 		//交接重瓶
 		for(int i=0; i<m_BottlesListZP.size(); i++){
-			bottleTakeOverUnit(m_BottlesListZP.get(i),  m_deliveryUser.getUsername(), m_curUserId,"5");//客户使用
+			bottleTakeOverUnit(m_BottlesListZP.get(i),  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户");//客户使用
 
 		}
 	}
 
 	//单个钢瓶交接
-	public void bottleTakeOverUnit(String bottleCode, String srcUserId, String targetUserId, String serviceStatus) {
+	public void bottleTakeOverUnit(String bottleCode, String srcUserId, String targetUserId, String serviceStatus, String note) {
 		NetRequestConstant nrc = new NetRequestConstant();
 		nrc.setType(HttpRequestType.PUT);
 		nrc.requestUrl = NetUrlConstant.BOTTLETAKEOVERURL+"/"+bottleCode;
@@ -650,6 +660,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		params.put("srcUserId",srcUserId);//用户号
 		params.put("targetUserId",targetUserId);//用户号
 		params.put("serviceStatus",serviceStatus);//用户号
+		params.put("note",note);//详细描述
 		nrc.setParams(params);
 		getServer(new Netcallback() {
 			public void preccess(Object res, boolean flag) {

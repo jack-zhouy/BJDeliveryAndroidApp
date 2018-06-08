@@ -39,6 +39,7 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
 
+
     <!-- 要求当前设备必须要有NFC芯片 -->
     <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
@@ -53,8 +54,10 @@
         <meta-data
             android:name="com.amap.api.v2.apikey"
             android:value="23533620dd15c0f3f59b3231fd6f7303"/>
-        <!-- 定位需要的服务 -->
         <service android:name="com.amap.api.location.APSService">
+        </service>
+        <!-- 定位需要的服务 -->
+        <service android:name=".utils.AmapLocationService">
         </service>
         <activity android:name="com.amap.api.navi.AmapRouteActivity"
             android:theme="@android:style/Theme.NoTitleBar"
@@ -68,6 +71,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.AutoLoginActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="自动登录"/>
         <activity android:name=".ui.LoginActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop"
