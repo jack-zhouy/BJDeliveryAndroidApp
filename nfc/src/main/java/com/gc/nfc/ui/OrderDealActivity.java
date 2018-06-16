@@ -455,12 +455,20 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 		switch (v.getId()) {
 			case R.id.button_next:
 			{
-				Toast.makeText(OrderDealActivity.this, "正在提交，请稍等。。。",
-						Toast.LENGTH_LONG).show();
-				m_buttonNext.setText("正在提交...");
-				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
-				m_buttonNext.setEnabled(false);
-				handlerDelayCommit.sendEmptyMessageDelayed(0,1000);
+				if(m_depLeader==null){
+					Toast.makeText(OrderDealActivity.this, "所属店长查询失败！请联系客服予以解决！",
+							Toast.LENGTH_LONG).show();
+					return;
+				}else{
+					Toast.makeText(OrderDealActivity.this, "正在提交，请稍等。。。",
+							Toast.LENGTH_LONG).show();
+					m_buttonNext.setText("正在提交...");
+					m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
+					m_buttonNext.setEnabled(false);
+					handlerDelayCommit.sendEmptyMessageDelayed(0,1000);
+				}
+
+
 			}
 			break;
 			case R.id.imageView_ticketSelect:// 用户的气票
