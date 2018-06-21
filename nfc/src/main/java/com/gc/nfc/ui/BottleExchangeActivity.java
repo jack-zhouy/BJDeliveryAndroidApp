@@ -40,15 +40,6 @@ import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.amap.api.maps.model.LatLng;
-import com.amap.api.maps.model.Poi;
-import com.amap.api.navi.AMapNavi;
-import com.amap.api.navi.AmapNaviPage;
-import com.amap.api.navi.AmapNaviParams;
-import com.amap.api.navi.AmapNaviType;
-import com.amap.api.navi.INaviInfoCallback;
-import com.amap.api.navi.model.AMapNaviLocation;
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
 import com.gc.nfc.common.NetRequestConstant;
@@ -62,8 +53,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -123,7 +116,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		if(mNfcAdapter!=null&& mNfcAdapter.isEnabled()){
 
 		}else{
-
 			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
 			dialog.setMessage("NFC 初始化失败！，本配送程序必须打开!");
 			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
@@ -172,7 +164,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	void init() {
 		try {
 			setContentView(R.layout.activity_bottle_exchange);
-
 			//获取传过来的任务订单参数
 			Bundle bundle = new Bundle();
 			bundle = this.getIntent().getExtras();
@@ -196,9 +187,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_bottleIdZPEditText = (EditText) findViewById(R.id.input_bottleIdZP);
 			m_imageAddKPManual = (ImageView) findViewById(R.id.imageView_addKPManual);
 			m_imageAddZPManual = (ImageView) findViewById(R.id.imageView_addZPManual);
-
-
-
 
 			m_imageViewZPEye.setOnClickListener(this);
 			m_imageViewKPEye.setOnClickListener(this);
@@ -227,18 +215,18 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				finish();
 			}
 
-			//初始化两个LISTVIEW的点击事件
+			//初始化两个LISTVIEW的点击事件，目前没有实现交接的回撤
 			m_listView_kp.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					deleteKP(position);
+					//deleteKP(position);
 					return true;
 				}
 			});
 			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					deleteZP(position);
+					//deleteZP(position);
 					return true;
 				}
 			});
@@ -321,7 +309,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			case R.id.button_next:
 				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
 						Toast.LENGTH_LONG).show();
-				bottleTakeOver();
 				m_buttonNext.setText("正在提交...");
 				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
 				m_buttonNext.setEnabled(false);
@@ -347,12 +334,12 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				break;
 
 			case R.id.imageView_addKPManual://手动添加空瓶号
-	            String bottleCodeKP = m_bottleIdKPEditText.getText().toString();
-				addKP(bottleCodeKP);
+				String bottleCodeKP = m_bottleIdKPEditText.getText().toString();
+				bottleTakeOverUnit(bottleCodeKP, m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收", false, true);//空瓶回收
 				break;
 			case R.id.imageView_addZPManual://手动添加重瓶号
 				String bottleCodeZP = m_bottleIdZPEditText.getText().toString();
-				addZP(bottleCodeZP);
+				bottleTakeOverUnit(bottleCodeZP,  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户",false, false);//客户使用
 				break;
 			default:
 				break;
@@ -464,18 +451,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		Tag detectedTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 		//2.获取Ndef的实例
 		Ndef ndef = Ndef.get(detectedTag);
-//		if (!haveMifareUltralight) {
-//			Toast.makeText(this, "不支持MifareUltralight数据格式", Toast.LENGTH_SHORT).show();
-//			return;
-//		}
 		String bottleCode = readNfcTag(intent);//NFC中的钢瓶编码
-
-
 		if(m_selected_nfc_model==0){//空瓶录入模式
-			addKP(bottleCode);
-
+			bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收", false, true);//空瓶回收
 		}else if(m_selected_nfc_model==1){//重瓶录入模式
-			addZP(bottleCode);
+			bottleTakeOverUnit(bottleCode,  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户",false, false);//客户使用
 		}
 	}
 
@@ -545,7 +525,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		dialog.show();
 	}
 
-	//空瓶删除函数
+	//重瓶删除函数
 	private void deleteZP(final int position){
 		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
 		dialog.setMessage("删除钢瓶:  "+m_BottlesListZP.get(position)+"   ?");
@@ -634,32 +614,41 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			throw new IllegalArgumentException();
 		}
 	}
-
-	//钢瓶责任交接
-	public void bottleTakeOver() {
-
-		//交接空瓶
-		for(int i=0; i<m_BottlesListKP.size(); i++){
-			bottleTakeOverUnit(m_BottlesListKP.get(i), m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收");//空瓶回收
-			bottlesStatusZPtoKP(m_BottlesListKP.get(i));  //将重瓶状态转换为空瓶
-		}
-		//交接重瓶
-		for(int i=0; i<m_BottlesListZP.size(); i++){
-			bottleTakeOverUnit(m_BottlesListZP.get(i),  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户");//客户使用
-
-		}
-	}
-
 	//单个钢瓶交接
-	public void bottleTakeOverUnit(String bottleCode, String srcUserId, String targetUserId, String serviceStatus, String note) {
+	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP) {
+		//如果存在交接记录表里，就提示已经存在了
+		boolean contained = false;
+		if (isKP){
+			for(int i=0; i<m_BottlesListKP.size();i++){
+				if(m_BottlesListKP.get(i).equals(bottleCode)){
+					contained = true;
+					break;
+				}
+			}
+		}else{
+			for(int i=0; i<m_BottlesListZP.size();i++){
+				if(m_BottlesListZP.get(i).equals(bottleCode)){
+					contained = true;
+					break;
+				}
+			}
+		}
+
+		if(contained){//已经存在了
+			Toast.makeText(BottleExchangeActivity.this, "钢瓶号："+bottleCode+"    请勿重复提交！",
+					Toast.LENGTH_LONG).show();
+			return;
+		}
+
 		NetRequestConstant nrc = new NetRequestConstant();
 		nrc.setType(HttpRequestType.PUT);
 		nrc.requestUrl = NetUrlConstant.BOTTLETAKEOVERURL+"/"+bottleCode;
 		nrc.context = this;
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("srcUserId",srcUserId);//用户号
-		params.put("targetUserId",targetUserId);//用户号
-		params.put("serviceStatus",serviceStatus);//用户号
+		params.put("targetUserId",targetUserId);
+		params.put("serviceStatus",serviceStatus);
+		params.put("enableForce",enableForce);
 		params.put("note",note);//详细描述
 		nrc.setParams(params);
 		getServer(new Netcallback() {
@@ -668,8 +657,40 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					HttpResponse response=(HttpResponse)res;
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==200){
-							m_takeOverCount++;
+							if(isKP){
+								addKP(bottleCode);
+								bottlesStatusZPtoKP(bottleCode);  //将重瓶状态转换为空瓶
+							}else {
+								addZP(bottleCode);
+							}
+						}else{
+							MediaPlayer music = MediaPlayer.create(BottleExchangeActivity.this, R.raw.alarm);
+							music.start();
+							new AlertDialog.Builder(BottleExchangeActivity.this).setTitle("钢瓶异常流转！")
+									.setMessage("钢瓶号 :"+bottleCode+"\r\n"+"错误原因:"+getResponseMessage(response)+"\r\n确认强制交接吗？")
+									.setIcon(R.drawable.icon_logo)
+									.setPositiveButton("确定",
+											new DialogInterface.OnClickListener()
+											{
+												@Override
+												public void onClick(DialogInterface dialog,
+																	int which)
+												{
+													//强制交接
+													bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP);
+												}
+											})
+									.setNegativeButton("取消",
+											new DialogInterface.OnClickListener()
+											{
+												@Override
+												public void onClick(DialogInterface dialog,
+																	int which)
+												{
 
+												}
+											})
+									.show();
 						}
 					}else {
 						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
@@ -687,22 +708,18 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
-			//判断交接是否成功，成功就跳转
-			if(m_takeOverCount == (m_BottlesListKP.size()+m_BottlesListZP.size())){
-				//交接成功
-				Intent intent = new Intent();
-				//将传过来的任务订单参数传到下一个页面
-				intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
-				intent.putExtras(m_bundle);
-				startActivity(intent);
-			}else{
-				Toast.makeText(BottleExchangeActivity.this, "提交超时，请重新提交！",
-						Toast.LENGTH_LONG).show();
-			}
 			m_buttonNext.setText("下一步");
 			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
 			m_buttonNext.setEnabled(true);
 			super.handleMessage(msg);
+
+			Intent intent = new Intent();
+			//将传过来的任务订单参数传到下一个页面
+			intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
+			intent.putExtras(m_bundle);
+			startActivity(intent);
+
+
 		}
 	};
 
@@ -737,40 +754,64 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		}, nrc);
 	}
 
-	private void addKP(String bottleCode){
-		if(m_userBottlesMap.containsKey(bottleCode)){
-			boolean contained = false;
-			for(int i=0; i<m_BottlesListKP.size();i++){
-				if(m_BottlesListKP.get(i).equals(bottleCode)){
-					contained = true;
-					break;
-				}
+	private void addKP(final String bottleCode){
+		boolean contained = false;
+		for(int i=0; i<m_BottlesListKP.size();i++){
+			if(m_BottlesListKP.get(i).equals(bottleCode)){
+				contained = true;
+				break;
 			}
-			if(!contained){//第一次扫
-				m_BottlesListKP.add(bottleCode);
-				refleshBottlesListKP();
-			}
-		}else{//非法钢瓶
-			Toast.makeText(BottleExchangeActivity.this, "空瓶录入：钢瓶号 "+bottleCode+"  非法！",
-					Toast.LENGTH_LONG).show();
+		}
+		if(!contained){//第一次扫
+			m_BottlesListKP.add(bottleCode);
+			refleshBottlesListKP();
 		}
 	}
 	private void addZP(String bottleCode) {
-		if (m_myBottlesMap.containsKey(bottleCode)) {
-			boolean contained = false;
-			for (int i = 0; i < m_BottlesListZP.size(); i++) {
-				if (m_BottlesListZP.get(i).equals(bottleCode)) {
-					contained = true;
-					break;
-				}
+
+		boolean contained = false;
+		for (int i = 0; i < m_BottlesListZP.size(); i++) {
+			if (m_BottlesListZP.get(i).equals(bottleCode)) {
+				contained = true;
+				break;
 			}
-			if (!contained) {//第一次扫
-				m_BottlesListZP.add(bottleCode);
-				refleshBottlesListZP();
+		}
+		if (!contained) {//第一次扫
+			m_BottlesListZP.add(bottleCode);
+			refleshBottlesListZP();
+		}
+
+	}
+
+	private String getResponseMessage(HttpResponse response) {
+		try {
+
+			BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
+					.getContent()));
+			StringBuffer sb = new StringBuffer("");
+			String line = "";
+			String NL = System.getProperty("line.separator");
+			while ((line = in.readLine()) != null) {
+				sb.append(line + NL);
 			}
-		} else {//非法钢瓶
-			Toast.makeText(BottleExchangeActivity.this, "重瓶录入：钢瓶号 " + bottleCode + "  非法！",
+			in.close();
+			String responseBody = sb.toString();
+
+			if (responseBody.equals("")) {
+				responseBody = "{\"message\":\"no value\"}";
+			}
+
+			JSONObject errorDetailJson = new JSONObject(responseBody);
+			String errorDetail = errorDetailJson.get("message").toString();
+			return errorDetail;
+		} catch (IOException e) {
+			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！" + e.getMessage(),
 					Toast.LENGTH_LONG).show();
+			return null;
+		} catch (JSONException e) {
+			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！" + e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return null;
 		}
 	}
 
