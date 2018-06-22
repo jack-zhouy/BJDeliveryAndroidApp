@@ -122,18 +122,18 @@ public class AmapLocationService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		m_appContext = (AppContext) getApplicationContext();
 		m_userId = m_appContext.getUser().getUsername();
-		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-		Notification.Builder builder = new Notification.Builder(this)
-				.setContentTitle("百江燃气")
-				.setContentText("百江配送持续运行中。")
-				.setContentIntent(pendingIntent)
-				.setSmallIcon(R.drawable.ic_launcher)
-				.setWhen(System.currentTimeMillis())
-				.setOngoing(true);
-		Notification notification=builder.getNotification();
-		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		startForeground(123456,notification);
-		notifyManager.notify(1, notification);
+//		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+//		Notification.Builder builder = new Notification.Builder(this)
+//				.setContentTitle("百江燃气")
+//				.setContentText("百江配送持续运行中。")
+//				.setContentIntent(pendingIntent)
+//				.setSmallIcon(R.drawable.ic_launcher)
+//				.setWhen(System.currentTimeMillis())
+//				.setOngoing(true);
+//		Notification notification=builder.getNotification();
+//		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//		startForeground(123456,notification);
+//		notifyManager.notify(1, notification);
 
 		return Service.START_STICKY;
 

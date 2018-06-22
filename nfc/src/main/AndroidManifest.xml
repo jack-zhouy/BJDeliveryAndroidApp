@@ -37,6 +37,8 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
 
 
@@ -56,6 +58,7 @@
             android:value="23533620dd15c0f3f59b3231fd6f7303"/>
         <service android:name="com.amap.api.location.APSService">
         </service>
+        <service android:name="com.dk.bleNfc.BleNfcDeviceService" />
         <!-- 定位需要的服务 -->
         <service android:name=".utils.AmapLocationService">
         </service>
@@ -91,6 +94,14 @@
             android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="待抢订单"/>
+        <activity android:name=".ui.StockManagerActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="库存管理"/>
+        <activity android:name=".ui.CustomScanActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="扫码"/>
         <activity android:name=".ui.MyOrdersActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop"

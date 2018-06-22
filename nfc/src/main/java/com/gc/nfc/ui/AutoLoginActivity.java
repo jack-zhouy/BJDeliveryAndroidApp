@@ -91,33 +91,38 @@ public class AutoLoginActivity extends BaseActivity{
 								String groupName = groupJson.optString("name");
 								String departmentCode = departmentJson.optString("code");
 								String departmentName = departmentJson.optString("name");
-								if(groupCode.equals("00003")){
-									Intent data = new Intent();
-									data.putExtra("userId", username);
-									AppContext appContext = (AppContext) getApplicationContext();
-									User user = new User();
-									user.setUsername(username);
-									user.setPassword(password);
-									user.setDepartmentCode(departmentCode);
-									user.setDepartmentName(departmentName);
-									user.setGroupCode(groupCode);
-									user.setGroupName(groupName);				appContext.setUser(user);
-									Toast.makeText(AutoLoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
-									setResult(12, data);
-
-									MediaPlayer music = MediaPlayer.create(AutoLoginActivity.this, R.raw.start_working);
-									music.start();
+								Intent data = new Intent();
+								data.putExtra("userId", username);
+								AppContext appContext = (AppContext) getApplicationContext();
+								User user = new User();
+								user.setUsername(username);
+								user.setPassword(password);
+								user.setDepartmentCode(departmentCode);
+								user.setDepartmentName(departmentName);
+								user.setGroupCode(groupCode);
+								user.setGroupName(groupName);				appContext.setUser(user);
+								Toast.makeText(AutoLoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
+								setResult(12, data);
+								MediaPlayer music = MediaPlayer.create(AutoLoginActivity.this, R.raw.start_working);
+								music.start();
+								if(groupCode.equals("00005")||groupCode.equals("00006")){
+									Intent intent = new Intent(getApplicationContext() , StockManagerActivity.class);
+									startActivity(intent);
+									finish();
+								}else if(groupCode.equals("00003")){
 									Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
 									startActivity(intent);
 									finish();
-
-								}else{
-									Toast.makeText(AutoLoginActivity.this, "非配送工账户，请更换！",
-											Toast.LENGTH_LONG).show();
-									Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+								}else if(groupCode.equals("00007")){//调拨员
+									Toast.makeText(AutoLoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
+									Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
 									startActivity(intent);
 									finish();
+								}else{
+									Toast.makeText(AutoLoginActivity.this, "非有效账户，请更换！",
+											Toast.LENGTH_LONG).show();
 								}
+
 
 							}catch (IOException e){
 								Toast.makeText(AutoLoginActivity.this, "未知错误，异常！",

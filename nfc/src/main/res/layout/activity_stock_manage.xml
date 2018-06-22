@@ -28,18 +28,18 @@
                     android:layout_gravity="center"
                     android:layout_marginLeft="16dp"
                     android:layout_weight="1"
-                    android:text="钢瓶交接"
+                    android:text="库存管理"
                     android:textColor="@color/white"
                     android:textSize="25sp" />
                 <EditText
                     android:id="@+id/msgText"
-                    android:editable="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="3"
                     android:text=""
                     android:textColor="@color/white"
+                    android:editable="false"
                     android:textSize="20sp" />
                 <ImageView
                     android:id="@+id/imageView_search"
@@ -50,6 +50,14 @@
                     android:layout_marginTop="10dp"
                     android:src="@drawable/abs__menu_dropdown_panel_holo_light" />
             </LinearLayout>
+            <TextView
+                android:id="@+id/textView_Department"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="责任部门"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="15sp" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
@@ -66,7 +74,7 @@
                         android:layout_weight="1"
                         android:textSize="22dp"
                         android:textColor="@color/colorPrimaryDark"
-                        android:text="空瓶录入" />
+                        android:text="入库" />
 
                     <RadioButton
                         android:id="@+id/radioButton_zp_id"
@@ -75,7 +83,7 @@
                         android:layout_weight="1"
                         android:textSize="22dp"
                         android:textColor="@color/colorPrimaryDark"
-                        android:text="重瓶录入" />
+                        android:text="出库" />
                 </RadioGroup>
             </LinearLayout>
 
@@ -90,53 +98,52 @@
                 android:orientation="vertical"
                 android:visibility="visible">
 
-                <RelativeLayout
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:orientation="horizontal">
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginTop="10dp"
-                        android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:text="空瓶回收"
-                        android:textSize="20sp"
-                        android:textColor="@color/black"/>
-                    <ImageView
-                        android:id="@+id/imageView_KPEYE"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_alignParentRight="true"
-                        android:layout_marginRight="10dp"
-                        android:layout_marginTop="10dp"
-                        android:src="@drawable/icon_setting" />
-                </RelativeLayout>
+                    android:orientation="vertical"
+                    android:visibility="visible">
 
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:orientation="horizontal">
-                    <EditText
-                        android:id="@+id/input_bottleIdKP"
+                    <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="#00000000"
-                        android:hint="手动输入钢瓶号"
-                        android:layout_marginTop="10dp"
-                        android:layout_toLeftOf="@+id/imageView_addKPManual"
-                        android:textSize="16sp" />
-                    <ImageView
-                        android:id="@+id/imageView_addKPManual"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_alignParentRight="true"
-                        android:layout_marginRight="10dp"
-                        android:layout_marginTop="10dp"
-                        android:src="@drawable/icon_add" />
-                </RelativeLayout>
+                        android:layout_marginLeft="10dp"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginTop="10dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:text="交接人"
+                            android:textSize="20sp"
+                            android:textColor="@color/black"/>
+                        <ImageView
+                            android:id="@+id/imageView_Scan"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:layout_alignParentRight="true"
+                            android:layout_marginRight="10dp"
+                            android:layout_marginTop="10dp"
+                            android:src="@drawable/icon_camera" />
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:id="@+id/input_TakeOverUserId"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="#00000000"
+                            android:hint="扫码识别交接人"
+                            android:layout_marginTop="10dp"
+                            android:layout_toLeftOf="@+id/imageView_addKPManual"
+                            android:textSize="16sp" />
+                    </RelativeLayout>
+                </LinearLayout>
 
 
                 <TextView
@@ -145,36 +152,8 @@
                     android:layout_marginTop="5dp"
                     android:background="@color/textgray" />
 
-                <ListView
-                    android:id="@+id/listview_kp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
 
             </LinearLayout>
-            <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:descendantFocusability="blocksDescendants"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="horizontal" >
-
-                <TextView
-                    android:layout_width="200dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginTop="10dp"
-                    android:text="合计"
-                    android:textColor="@color/popup_main_background" />
-                <TextView
-                    android:id="@+id/items_totalCountKP"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
-                    android:layout_alignParentRight="true"
-                    android:textColor="@color/colorAccent"
-                    android:textSize="20dp"
-                    android:text=""/>
-            </RelativeLayout>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -192,18 +171,9 @@
                         android:layout_marginTop="10dp"
                         android:layout_weight="1"
                         android:gravity="center_vertical"
-                        android:text="重瓶录入"
+                        android:text="交接清单"
                         android:textSize="20sp"
                         android:textColor="@color/black"/>
-
-                    <ImageView
-                        android:id="@+id/imageView_ZPEYE"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:layout_alignParentRight="true"
-                        android:layout_marginRight="10dp"
-                        android:layout_marginTop="10dp"
-                        android:src="@drawable/icon_setting" />
                 </RelativeLayout>
                 <RelativeLayout
                     android:layout_width="match_parent"
@@ -289,7 +259,7 @@
             android:layout_marginTop="0dp"
             android:background="@drawable/button_select"
             android:padding="10dp"
-            android:text="下一步"
+            android:text="重置"
             android:textColor="@color/white"
             android:textSize="20sp" />
     </LinearLayout>

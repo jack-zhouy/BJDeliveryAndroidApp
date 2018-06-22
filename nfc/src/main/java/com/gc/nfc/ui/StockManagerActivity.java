@@ -3,36 +3,28 @@ package com.gc.nfc.ui;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
-import android.nfc.Tag;
-import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Parcelable;
-import android.provider.Settings;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -42,9 +34,21 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.SimpleAdapter;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.dk.bleNfc.BleManager.BleManager;
+import com.dk.bleNfc.BleManager.Scanner;
+import com.dk.bleNfc.BleManager.ScannerCallback;
+import com.dk.bleNfc.BleNfcDeviceService;
+import com.dk.bleNfc.DeviceManager.BleNfcDevice;
+import com.dk.bleNfc.DeviceManager.ComByteManager;
+import com.dk.bleNfc.DeviceManager.DeviceManager;
+import com.dk.bleNfc.DeviceManager.DeviceManagerCallback;
+import com.dk.bleNfc.Exception.CardNoResponseException;
+import com.dk.bleNfc.Exception.DeviceNoResponseException;
+import com.dk.bleNfc.Tool.StringTool;
+import com.dk.bleNfc.card.Ntag21x;
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
 import com.gc.nfc.common.NetRequestConstant;
@@ -60,10 +64,7 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,29 +72,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 
-import com.dk.bleNfc.BleManager.BleManager;
-import com.dk.bleNfc.BleManager.ScannerCallback;
-import com.dk.bleNfc.BleNfcDeviceService;
-import com.dk.bleNfc.DeviceManager.BleNfcDevice;
-import com.dk.bleNfc.DeviceManager.ComByteManager;
-import com.dk.bleNfc.DeviceManager.DeviceManager;
-import com.dk.bleNfc.DeviceManager.DeviceManagerCallback;
-import com.dk.bleNfc.Exception.CardNoResponseException;
-import com.dk.bleNfc.Exception.DeviceNoResponseException;
-import com.dk.bleNfc.Tool.StringTool;
-import com.dk.bleNfc.card.CpuCard;
-import com.dk.bleNfc.card.FeliCa;
-import com.dk.bleNfc.card.Iso14443bCard;
-import com.dk.bleNfc.card.Iso15693Card;
-import com.dk.bleNfc.card.Mifare;
-import com.dk.bleNfc.card.Ntag21x;
-import com.dk.bleNfc.BleManager.*;
-import android.bluetooth.BluetoothDevice;
-import com.gc.nfc.utils.*;
-
-
-public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
+public class StockManagerActivity extends BaseActivity implements OnClickListener  {
 	BleNfcDeviceService mBleNfcDeviceService;
 	private BleNfcDevice bleNfcDevice;
 	private Scanner mScanner;
@@ -106,49 +88,32 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private Lock mNearestBleLock = new ReentrantLock();// 锁对象
 	private int lastRssi = -100;
 	//=========================
-	private int m_takeOverCount = 0;//空瓶交接状态
-
-	private TextView m_textViewTotalCountKP;// 空瓶数量
 	private TextView m_textViewTotalCountZP;// 重瓶数量
-
-	private NfcAdapter mNfcAdapter;
-	private PendingIntent mPendingIntent;
-
 	private Button m_buttonNext;//下一步
-	private ListView m_listView_kp;// 空瓶号列表
 	private ListView m_listView_zp;// 重瓶号列表
 	private  RadioGroup  radioGroup_nfc=null;
 	private  RadioButton  radioButton_kp,radioButton_zp;//nfc空瓶/重瓶录入
-
-	private ImageView m_imageViewKPEye; //有效空瓶查看
-	private ImageView m_imageViewZPEye; //有效重瓶查看
 	private SwipeRefreshLayout swipeRefreshLayout;
 	private AppContext appContext;
-	private JSONObject m_OrderJson;//订单详情
-	private String m_businessKey;//订单号
-
-	private String m_customerAddress;//用户地址
 
 
-	private String m_curUserId;//该订单用户
-	private JSONObject m_curUserSettlementType;//结算类型
-	private User m_deliveryUser;//配送工
-	private Map<String,JSONObject> m_userBottlesMap;//当前订单用户的钢瓶
-	private Map<String,JSONObject> m_myBottlesMap;//当前配送工的钢瓶
+	private User m_curLoginUserId;
 
-	private List<String> m_BottlesListKP;//重瓶表
-	private List<String> m_BottlesListZP;//空瓶表
 
-	private int m_selected_nfc_model;//0--空瓶 1--重瓶
+	private List<String> m_BottlesListZP;//瓶表
+
+	private int m_selected_nfc_model;//0--入库 1--出库
 
 	Bundle m_bundle;//上个activity传过来的参数
 
-	private EditText m_bottleIdKPEditText, m_bottleIdZPEditText;//手动输入空重瓶号
-	private ImageView m_imageAddKPManual; //手动输入空瓶号
+	private EditText  m_bottleIdZPEditText;//手动输入空重瓶号
 	private ImageView m_imageAddZPManual; //手动输入重瓶号
-
-
-	/**
+	private TextView m_editTextTakeOverUserId;//交接人
+	private ImageView m_imageViewScan; //扫码识别用户
+	private TextView m_textView_Department; //责任部门
+	private String m_takerOverUserId;//出库为dest人员·入库为src人员
+	private String m_takeOverGroupCode;//交接人角色信息
+	/*
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
 
@@ -159,91 +124,57 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	}
 	@Override
 	void init() {
-		try {
-			setContentView(R.layout.activity_bottle_exchange);
-			//获取传过来的任务订单参数
-			Bundle bundle = new Bundle();
-			bundle = this.getIntent().getExtras();
-			m_bundle = bundle;
-			String  strOrder = bundle.getString("order");
-			m_OrderJson = new JSONObject(strOrder);
 
-			//控件初始化
-			m_buttonNext = (Button) findViewById(R.id.button_next);//下一步按钮
-			m_listView_kp = (ListView) findViewById(R.id.listview_kp);
-			m_listView_zp = (ListView) findViewById(R.id.listview_zp);
-			radioGroup_nfc=(RadioGroup)findViewById(R.id.radioGroup_nfc_id);
-			radioButton_kp=(RadioButton)findViewById(R.id.radioButton_kp_id);
-			radioButton_zp=(RadioButton)findViewById(R.id.radioButton_zp_id);
-			m_imageViewKPEye = (ImageView) findViewById(R.id.imageView_KPEYE);
-			m_imageViewZPEye = (ImageView) findViewById(R.id.imageView_ZPEYE);
-			m_textViewTotalCountKP = (TextView) findViewById(R.id.items_totalCountKP);
-			m_textViewTotalCountZP = (TextView) findViewById(R.id.items_totalCountZP);
+		setContentView(R.layout.activity_stock_manage);
 
-			m_bottleIdKPEditText = (EditText) findViewById(R.id.input_bottleIdKP);
-			m_bottleIdZPEditText = (EditText) findViewById(R.id.input_bottleIdZP);
-			m_imageAddKPManual = (ImageView) findViewById(R.id.imageView_addKPManual);
-			m_imageAddZPManual = (ImageView) findViewById(R.id.imageView_addZPManual);
+		//控件初始化
+		m_buttonNext = (Button) findViewById(R.id.button_next);//下一步按钮
+		m_listView_zp = (ListView) findViewById(R.id.listview_zp);
+		radioGroup_nfc=(RadioGroup)findViewById(R.id.radioGroup_nfc_id);
+		radioButton_kp=(RadioButton)findViewById(R.id.radioButton_kp_id);
+		radioButton_zp=(RadioButton)findViewById(R.id.radioButton_zp_id);
 
+		m_bottleIdZPEditText = (EditText) findViewById(R.id.input_bottleIdZP);
+		m_imageAddZPManual = (ImageView) findViewById(R.id.imageView_addZPManual);
+		m_imageViewScan = (ImageView) findViewById(R.id.imageView_Scan);
+		m_textViewTotalCountZP =(TextView) findViewById(R.id.items_totalCountZP);
+		m_imageAddZPManual.setOnClickListener(this);
+		m_imageViewScan.setOnClickListener(this);
 
-			m_imageViewZPEye.setOnClickListener(this);
-			m_imageViewKPEye.setOnClickListener(this);
-			m_imageAddKPManual.setOnClickListener(this);
-			m_imageAddZPManual.setOnClickListener(this);
+		m_buttonNext.setOnClickListener(this);
+		radioGroup_nfc.setOnCheckedChangeListener(listen);
+		radioGroup_nfc.check(radioButton_kp.getId());//默认是空瓶
 
-			m_buttonNext.setOnClickListener(this);
-			radioGroup_nfc.setOnCheckedChangeListener(listen);
-			radioGroup_nfc.check(radioButton_kp.getId());//默认是空瓶
+		//数据结构初始化
+		m_BottlesListZP = new ArrayList<String>();
 
-			//数据结构初始化
-			m_userBottlesMap = new HashMap<String, JSONObject>();
-			m_myBottlesMap = new HashMap<String, JSONObject>();
-			m_BottlesListKP = new ArrayList<String>();
-			m_BottlesListZP = new ArrayList<String>();
+		m_imageViewScan = (ImageView) findViewById(R.id.imageView_Scan);
+		m_editTextTakeOverUserId = (TextView) findViewById(R.id.input_TakeOverUserId);
+		m_textView_Department = (TextView) findViewById(R.id.textView_Department);
 
-
-
-			//获取当前配送工
-			appContext = (AppContext) getApplicationContext();
-			m_deliveryUser = appContext.getUser();
-			if (m_deliveryUser == null) {
-				Toast.makeText(BottleExchangeActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
-				Intent intent = new Intent(BottleExchangeActivity.this, LoginActivity.class);
-				startActivity(intent);
-				finish();
-			}
-
-			//初始化两个LISTVIEW的点击事件，目前没有实现交接的回撤
-			m_listView_kp.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					//deleteKP(position);
-					return true;
-				}
-			});
-			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					//deleteZP(position);
-					return true;
-				}
-			});
-
-
-
-
-			//数据初始化
-			setOrderHeadInfo();
-			getUserBottles();//获取用户名下的钢瓶号
-			getMyBottles();//获取配送工名下的钢瓶号
-			//蓝牙设备初始化
-			blueDeviceInitial();
-
-
-		}catch (JSONException e){
-			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
-					Toast.LENGTH_LONG).show();
+		//获取当前
+		appContext = (AppContext) getApplicationContext();
+		m_curLoginUserId = appContext.getUser();
+		if (m_curLoginUserId == null) {
+			Toast.makeText(StockManagerActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+			Intent intent = new Intent(StockManagerActivity.this, LoginActivity.class);
+			startActivity(intent);
+			finish();
 		}
+
+		//初始化两个LISTVIEW的点击事件，目前没有实现交接的回撤
+		m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+				return true;
+			}
+		});
+		m_takerOverUserId = null;
+		//获取责任部门
+		m_textView_Department.setText(m_curLoginUserId.getDepartmentName());
+		//蓝牙设备初始化
+		blueDeviceInitial();
+
 	}
 
 	private OnCheckedChangeListener  listen=new OnCheckedChangeListener() {
@@ -282,190 +213,160 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		listView.setLayoutParams(params);
 	}
 
-	//设置订单概要信息
-	private void setOrderHeadInfo() {
-		try {
-			//获取订单用户
-			JSONObject customerJson = m_OrderJson.getJSONObject("customer");
-			m_curUserId = customerJson.get("userId").toString();
-
-			JSONObject addressJson = m_OrderJson.getJSONObject("recvAddr");
-			m_customerAddress = addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
-
-
-
-
-		}catch (JSONException e){
-			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
-					Toast.LENGTH_LONG).show();
-		}
-	}
-
-
-
 
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
-						Toast.LENGTH_LONG).show();
-				m_buttonNext.setText("正在提交...");
-				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
-				m_buttonNext.setEnabled(false);
-				handler_old.sendEmptyMessageDelayed(0,3000);
+				cleanAll();
+				break;
+			case R.id.imageView_addZPManual://手动添加钢瓶号
+				if(m_takerOverUserId == null){//
+					Toast.makeText(StockManagerActivity.this, "请扫码获取交接人信息！",	Toast.LENGTH_LONG).show();
+					return;
+				}
+				String bottleCode = m_bottleIdZPEditText.getText().toString();
+				String bottleStatus = new String();
+				if(m_selected_nfc_model==0){//ruku
+					if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
+							bottleStatus = "2";//门店库存
+					}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
+						bottleStatus = "1";//充气站库存
+					}else{
+						Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
+						return;
+					}
+					bottleTakeOverUnit(bottleCode, m_takerOverUserId, m_curLoginUserId.getUsername(), bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶入库", false, true);//钢瓶入库
+				}else if(m_selected_nfc_model==1){//chuku
+					if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
+						if(m_takeOverGroupCode.equals("00007")){//配送车
+							bottleStatus = "3";//在途运输
+						}else if(m_takeOverGroupCode.equals("00003")){//配送工
+							bottleStatus = "4";//在途派送
+						}else {
+							Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
+							return;
+						}
+					}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
+						bottleStatus = "3";//在途运输
+					}else{
+						Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
+						return;
+					}
+					bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, true);//钢瓶入库
+				}
 
-
 				break;
-			case R.id.imageView_KPEYE:// 用户的气瓶
-				Intent intentKP = new Intent();
-				Bundle bundleKP = new Bundle();
-				bundleKP.putString("userId", m_curUserId);
-				intentKP.setClass(BottleExchangeActivity.this, MybottlesActivity.class);
-				intentKP.putExtras(bundleKP);
-				startActivity(intentKP);
-				break;
-			case R.id.imageView_ZPEYE://配送工的气瓶
-				Intent intentZP = new Intent();
-				Bundle bundleZP = new Bundle();
-				bundleZP.putString("userId", m_deliveryUser.getUsername());
-				intentZP.setClass(BottleExchangeActivity.this, MybottlesActivity.class);
-				intentZP.putExtras(bundleZP);
-				startActivity(intentZP);
-				break;
-
-			case R.id.imageView_addKPManual://手动添加空瓶号
-				String bottleCodeKP = m_bottleIdKPEditText.getText().toString();
-				bottleTakeOverUnit(bottleCodeKP, m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收", false, true);//空瓶回收
-				break;
-			case R.id.imageView_addZPManual://手动添加重瓶号
-				String bottleCodeZP = m_bottleIdZPEditText.getText().toString();
-				bottleTakeOverUnit(bottleCodeZP,  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户",false, false);//客户使用
+			case R.id.imageView_Scan://扫描用户二维码
+				startScan();
 				break;
 			default:
 				break;
 		}
 
 	}
-
-	//获取该用户名下的瓶子
-	public void getUserBottles() {
-
-		// get请求
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.GET);
-
-		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("liableUserId",m_curUserId );//用户号
-		nrc.setParams(params);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-							try {
-								m_userBottlesMap.clear();
-								JSONObject bottlesJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-								JSONArray bottlesListJson = bottlesJson.getJSONArray("items");
-
-								for(int i=0;i<bottlesListJson.length(); i++){
-									JSONObject bottleJson = bottlesListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
-									String bottleCode = bottleJson.get("number").toString();//钢瓶编号
-									m_userBottlesMap.put(bottleCode, bottleJson);
-								}
-
-							}catch (IOException e){
-								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}catch (JSONException e) {
-								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}
-						}
-					}else {
-						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-								Toast.LENGTH_LONG).show();
-					}
-				} else {
-					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-				}
-			}
-		}, nrc);
+	private void startScan() {
+		new IntentIntegrator(this)
+				.setOrientationLocked(false)
+				.setCaptureActivity(CustomScanActivity.class) // 设置自定义的activity是CustomActivity
+				.initiateScan(); // 初始化扫描
 	}
 
-	//获取配送工名下的瓶子
-	public void getMyBottles() {
+	@Override
+// 通过 onActivityResult的方法获取 扫描回来的 值
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		IntentResult intentResult = IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
+		if(intentResult != null) {
+			if(intentResult.getContents() == null) {
+				Toast.makeText(this,"内容为空",Toast.LENGTH_LONG).show();
+			} else {
+				//Toast.makeText(this,"扫描成功",Toast.LENGTH_LONG).show();
+				// ScanResult 为 获取到的字符串
+				String takerOverUserId = intentResult.getContents();
 
-
-		// get请求
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.GET);
-
-		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("liableUserId",m_deliveryUser.getUsername());//责任人是当前用户
-		nrc.setParams(params);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-							try {
-								m_myBottlesMap.clear();
-								JSONObject bottlesJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-								JSONArray bottlesListJson = bottlesJson.getJSONArray("items");
-
-								for(int i=0;i<bottlesListJson.length(); i++){
-									JSONObject bottleJson = bottlesListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
-									String bottleCode = bottleJson.get("number").toString();//钢瓶编号
-									m_myBottlesMap.put(bottleCode, bottleJson);
-								}
-
-							}catch (IOException e){
-								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}catch (JSONException e) {
-								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-							}
-						}
-					}else {
-						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-								Toast.LENGTH_LONG).show();
-					}
-				} else {
-					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-				}
+				//查询交接人信息
+				sysUserInfoQuery(takerOverUserId);
 			}
-		}, nrc);
-	}
-
-	//NFC更新空瓶表
-	private void refleshBottlesListKP(){
-		m_textViewTotalCountKP.setText(Integer.toString(m_BottlesListKP.size()));
-		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
-
-		for(int i=0;i<m_BottlesListKP.size(); i++){
-			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_BottlesListKP.get(i));
-			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
+		} else {
+			super.onActivityResult(requestCode,resultCode,data);
 		}
-		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
-		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				BottleExchangeActivity.this,/*传入一个上下文作为参数*/
-				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
-				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
+	}
+	private void sysUserInfoQuery(String userId){
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+		nrc.requestUrl = NetUrlConstant.SYSUSERQUERYURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("userId", userId);
 
-		m_listView_kp.setAdapter(simpleAdapter);
-		setListViewHeightBasedOnChildren(m_listView_kp);
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							try {
+								JSONObject responseJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray userJsonArray = responseJson.getJSONArray("items");
+								if(userJsonArray.length()==1){
+									JSONObject userJson = userJsonArray.getJSONObject(0);
+									JSONObject groupJson = userJson.getJSONObject("userGroup");
+									String groupCode = groupJson.optString("code");
+									String userId = userJson.optString("userId");
+									String userName	 = userJson.optString("name");
+									String groupName	 = groupJson.optString("name");
+									m_takeOverGroupCode = groupCode;
+									if(groupCode.equals("00007")){//配送车
+										m_takerOverUserId = userId;
+										m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
+									}else if(groupCode.equals("00003")){//配送工
+										m_takerOverUserId = userId;
+										m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
+									}else {
+										Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
+									}
+								}else{
+									Toast.makeText(StockManagerActivity.this, "无效账户，请更换！",	Toast.LENGTH_LONG).show();
+
+								}
+
+							}catch (IOException e){
+								Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
+										Toast.LENGTH_LONG).show();
+								Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+								startActivity(intent);
+								finish();
+							}catch (JSONException e) {
+								Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
+										Toast.LENGTH_LONG).show();
+								Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+								startActivity(intent);
+								finish();
+							}
+
+						}else{
+							Toast.makeText(StockManagerActivity.this, "异常错误，请求交接人信息失败", Toast.LENGTH_LONG).show();
+							Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+							startActivity(intent);
+							finish();
+						}
+					}else {
+						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+						Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+						startActivity(intent);
+						finish();
+					}
+				} else {
+					Toast.makeText(StockManagerActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+					Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+					startActivity(intent);
+					finish();
+				}
+			}
+		}, nrc);
 	}
 
 	//NFC更新重瓶表
@@ -480,7 +381,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		}
 		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
 		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				BottleExchangeActivity.this,/*传入一个上下文作为参数*/
+				StockManagerActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
 				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
@@ -489,138 +390,21 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		setListViewHeightBasedOnChildren(m_listView_zp);
 	}
 
-	//空瓶删除函数
-	private void deleteKP(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("删除钢瓶:  "+m_BottlesListKP.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_BottlesListKP.remove(position);
-				refleshBottlesListKP();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
-	}
-
-	//重瓶删除函数
-	private void deleteZP(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("删除钢瓶:  "+m_BottlesListZP.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_BottlesListZP.remove(position);
-				refleshBottlesListZP();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
-	}
-
-	/**
-	 * 读取NFC标签文本数据
-	 */
-	private String readNfcTag(Intent intent) {
-		String strText = null;
-		if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())) {
-			Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
-					NfcAdapter.EXTRA_NDEF_MESSAGES);
-			NdefMessage msgs[] = null;
-			int contentSize = 0;
-			if (rawMsgs != null) {
-				msgs = new NdefMessage[rawMsgs.length];
-				for (int i = 0; i < rawMsgs.length; i++) {
-					msgs[i] = (NdefMessage) rawMsgs[i];
-					contentSize += msgs[i].toByteArray().length;
-				}
-			}
-			try {
-				if (msgs != null) {
-					NdefRecord record = msgs[0].getRecords()[0];
-					strText = parseTextRecord(record);
-					return strText;
-				}
-			} catch (Exception e) {
-
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * 解析NDEF文本数据，从第三个字节开始，后面的文本数据
-	 *
-	 * @param ndefRecord
-	 * @return
-	 */
-	public static String parseTextRecord(NdefRecord ndefRecord) {
-		/**
-		 * 判断数据是否为NDEF格式
-		 */
-		//判断TNF
-		if (ndefRecord.getTnf() != NdefRecord.TNF_WELL_KNOWN) {
-			return null;
-		}
-		//判断可变的长度的类型
-		if (!Arrays.equals(ndefRecord.getType(), NdefRecord.RTD_TEXT)) {
-			return null;
-		}
-		try {
-			//获得字节数组，然后进行分析
-			byte[] payload = ndefRecord.getPayload();
-			//下面开始NDEF文本数据第一个字节，状态字节
-			//判断文本是基于UTF-8还是UTF-16的，取第一个字节"位与"上16进制的80，16进制的80也就是最高位是1，
-			//其他位都是0，所以进行"位与"运算后就会保留最高位
-			String textEncoding = ((payload[0] & 0x80) == 0) ? "UTF-8" : "UTF-16";
-			//3f最高两位是0，第六位是1，所以进行"位与"运算后获得第六位
-			int languageCodeLength = payload[0] & 0x3f;
-			//下面开始NDEF文本数据第二个字节，语言编码
-			//获得语言编码
-			String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
-			//下面开始NDEF文本数据后面的字节，解析出文本
-			String textRecord = new String(payload, languageCodeLength + 1,
-					payload.length - languageCodeLength - 1, textEncoding);
-			return textRecord;
-		} catch (Exception e) {
-			throw new IllegalArgumentException();
-		}
-	}
 	//单个钢瓶交接
-	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP) {
+	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isRuKu) {
 		//如果存在交接记录表里，就提示已经存在了
 		boolean contained = false;
-		if (isKP){
-			for(int i=0; i<m_BottlesListKP.size();i++){
-				if(m_BottlesListKP.get(i).equals(bottleCode)){
-					contained = true;
-					break;
-				}
-			}
-		}else{
-			for(int i=0; i<m_BottlesListZP.size();i++){
-				if(m_BottlesListZP.get(i).equals(bottleCode)){
-					contained = true;
-					break;
-				}
+
+		for(int i=0; i<m_BottlesListZP.size();i++){
+			if(m_BottlesListZP.get(i).equals(bottleCode)){
+				contained = true;
+				break;
 			}
 		}
 
+
 		if(contained){//已经存在了
-			Toast.makeText(BottleExchangeActivity.this, "钢瓶号："+bottleCode+"    请勿重复提交！",
+			Toast.makeText(StockManagerActivity.this, "钢瓶号："+bottleCode+"    请勿重复提交！",
 					Toast.LENGTH_LONG).show();
 			return;
 		}
@@ -642,18 +426,19 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					HttpResponse response=(HttpResponse)res;
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==200){
-							MediaPlayer music = MediaPlayer.create(BottleExchangeActivity.this, R.raw.nfcok);
+							MediaPlayer music = MediaPlayer.create(StockManagerActivity.this, R.raw.nfcok);
 							music.start();
-							if(isKP){
-								addKP(bottleCode);
-								bottlesStatusZPtoKP(bottleCode);  //将重瓶状态转换为空瓶
+							if(isRuKu){
 							}else {
-								addZP(bottleCode);
+								if(m_curLoginUserId.getGroupCode().equals("00006")) {//充气站
+									bottlesStatusKPtoZP(bottleCode);//将空瓶状态转换为重瓶
+								}
 							}
+							addZP(bottleCode);
 						}else{
-							MediaPlayer music = MediaPlayer.create(BottleExchangeActivity.this, R.raw.alarm);
+							MediaPlayer music = MediaPlayer.create(StockManagerActivity.this, R.raw.alarm);
 							music.start();
-							new AlertDialog.Builder(BottleExchangeActivity.this).setTitle("钢瓶异常流转！")
+							new AlertDialog.Builder(StockManagerActivity.this).setTitle("钢瓶异常流转！")
 									.setMessage("钢瓶号 :"+bottleCode+"\r\n"+"错误原因:"+getResponseMessage(response)+"\r\n确认强制交接吗？")
 									.setIcon(R.drawable.icon_logo)
 									.setPositiveButton("确定",
@@ -664,7 +449,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 																	int which)
 												{
 													//强制交接
-													bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP);
+													bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isRuKu);
 												}
 											})
 									.setNegativeButton("取消",
@@ -680,11 +465,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 									.show();
 						}
 					}else {
-						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
 								Toast.LENGTH_LONG).show();
 					}
 				} else {
-					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+					Toast.makeText(StockManagerActivity.this, "网络未连接！",
 							Toast.LENGTH_LONG).show();
 				}
 			}
@@ -692,34 +477,15 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	}
 
 
-	private Handler handler_old = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			m_buttonNext.setText("下一步");
-			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
-			m_buttonNext.setEnabled(true);
-			super.handleMessage(msg);
-
-			Intent intent = new Intent();
-			//将传过来的任务订单参数传到下一个页面
-			intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
-			intent.putExtras(m_bundle);
-			startActivity(intent);
-
-
-		}
-	};
-
-
 	//单个钢瓶状态由重瓶转为空瓶
-	public void bottlesStatusZPtoKP(String bottleCode) {
+	public void bottlesStatusKPtoZP(String bottleCode) {
 		NetRequestConstant nrc = new NetRequestConstant();
 		nrc.setType(HttpRequestType.PUT);
 		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL+"/"+bottleCode;
 		nrc.context = this;
 		Map<String, Object> params = new HashMap<String, Object>();
 		Map<String, Object> body = new HashMap<String, Object>();
-		body.put("loadStatus","LSEmpty");//空瓶
+		body.put("loadStatus","LSHeavy");//空瓶
 		nrc.setParams(params);
 		nrc.setBody(body);
 		getServer(new Netcallback() {
@@ -730,30 +496,17 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 						if(response.getStatusLine().getStatusCode()==200){
 						}
 					}else {
-						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
 								Toast.LENGTH_LONG).show();
 					}
 				} else {
-					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+					Toast.makeText(StockManagerActivity.this, "网络未连接！",
 							Toast.LENGTH_LONG).show();
 				}
 			}
 		}, nrc);
 	}
 
-	private void addKP(final String bottleCode){
-		boolean contained = false;
-		for(int i=0; i<m_BottlesListKP.size();i++){
-			if(m_BottlesListKP.get(i).equals(bottleCode)){
-				contained = true;
-				break;
-			}
-		}
-		if(!contained){//第一次扫
-			m_BottlesListKP.add(bottleCode);
-			refleshBottlesListKP();
-		}
-	}
 	private void addZP(String bottleCode) {
 
 		boolean contained = false;
@@ -792,11 +545,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			String errorDetail = errorDetailJson.get("message").toString();
 			return errorDetail;
 		} catch (IOException e) {
-			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！" + e.getMessage(),
+			Toast.makeText(StockManagerActivity.this, "未知错误，异常！" + e.getMessage(),
 					Toast.LENGTH_LONG).show();
 			return null;
 		} catch (JSONException e) {
-			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！" + e.getMessage(),
+			Toast.makeText(StockManagerActivity.this, "未知错误，异常！" + e.getMessage(),
 					Toast.LENGTH_LONG).show();
 			return null;
 		}
@@ -1024,8 +777,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					}
 				}
 				break;
-				default:
-					break;
+			default:
+				break;
 		}
 		return true;
 	}
@@ -1157,11 +910,39 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					}).start();
 					break;
 				case 0x88:
+					if(m_takerOverUserId == null){//
+						Toast.makeText(StockManagerActivity.this, "请扫码获取交接人信息！",	Toast.LENGTH_LONG).show();
+						return;
+					}
 					String bottleCode = msg.obj.toString();
-					if(m_selected_nfc_model==0){//空瓶录入模式
-						bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收", false, true);//空瓶回收
-					}else if(m_selected_nfc_model==1){//重瓶录入模式
-						bottleTakeOverUnit(bottleCode,  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户",false, false);//客户使用
+					String bottleStatus = new String();
+					if(m_selected_nfc_model==0){//ruku
+						if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
+							bottleStatus = "2";//门店库存
+						}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
+							bottleStatus = "1";//充气站库存
+						}else{
+							Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
+							return;
+						}
+						bottleTakeOverUnit(bottleCode, m_takerOverUserId, m_curLoginUserId.getUsername(), bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶入库", false, true);//钢瓶入库
+					}else if(m_selected_nfc_model==1){//chuku
+						if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
+							if(m_takeOverGroupCode.equals("00007")){//配送车
+								bottleStatus = "3";//在途运输
+							}else if(m_takeOverGroupCode.equals("00003")){//配送工
+								bottleStatus = "4";//在途派送
+							}else {
+								Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
+								return;
+							}
+						}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
+							bottleStatus = "3";//在途运输
+						}else{
+							Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
+							return;
+						}
+						bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, true);//钢瓶出库
 					}
 					break;
 
@@ -1184,7 +965,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		return isSuc;
 	}
 	//搜索按键监听
-	private class StartSearchButtonListener implements View.OnClickListener {
+	private class StartSearchButtonListener implements OnClickListener {
 		@Override
 		public void onClick(View v) {
 			if ( (bleNfcDevice.isConnection() == BleManager.STATE_CONNECTED) ) {
@@ -1193,6 +974,95 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			}
 			searchNearestBleDevice();
 		}
+	}
+
+	private void cleanAll(){
+		m_takerOverUserId = null;
+		m_BottlesListZP.clear();
+		refleshBottlesListZP();
+		m_editTextTakeOverUserId.setText("");
+
+
+	}
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent event)
+	{
+		if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 &&event.getAction() == KeyEvent.ACTION_DOWN)        {
+			new AlertDialog.Builder(StockManagerActivity.this).setTitle("提示")
+					.setMessage("确认退出吗？")
+					.setIcon(R.drawable.icon_logo)
+					.setPositiveButton("确定",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
+								}
+							})
+					.setNegativeButton("取消",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+
+								}
+							})
+					.setNegativeButton("重新登陆",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+									loginOut();//重新登陆
+								}
+							})
+					.show();
+			return false;
+		}
+		else
+		{
+			return super.dispatchKeyEvent(event);
+		}
+	}
+	private void loginOut(){
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+		final String username = m_curLoginUserId.getUsername();
+		final String password = m_curLoginUserId.getPassword();
+		nrc.requestUrl = NetUrlConstant.LOGINOUTURL+"/"+username;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							//设置退出登录
+							Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+							startActivity(intent);
+							finish();
+						}else{
+							Toast.makeText(StockManagerActivity.this, "退出登录失败", Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(StockManagerActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
 	}
 
 }

@@ -11,7 +11,7 @@ import com.gc.nfc.utils.NetUtil;
 import com.gc.nfc.common.NetRequestConstant;
 
 import org.apache.http.HttpResponse;
-
+import android.os.Looper;
 /**
  * 如果要请求网络的话，就继承BaseActivity，其余的不用
  * @author hp
@@ -103,10 +103,12 @@ public abstract class BaseActivity extends Activity {
 	}
 	
 	protected void getServer(Netcallback callBack ,NetRequestConstant nrc){
-		
+
+
 		Handler handler = new BaseHandler(callBack);
 		RunnableTask task = new RunnableTask(nrc, handler); 
 		ThreadPool.getInstance().addTask(task);
+
 		
 	}
 }
