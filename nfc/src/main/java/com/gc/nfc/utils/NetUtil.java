@@ -109,7 +109,7 @@ public class NetUtil {
 			Map<String, Object> body = nrc.body;
 			JSONObject bodyJson = new JSONObject();  ;
 			for(Map.Entry<String, Object> entry : body.entrySet()){
-				bodyJson.put(entry.getKey(), (String) entry.getValue());
+				bodyJson.put(entry.getKey(), entry.getValue());
 			}
 
 			StringEntity stringEntity = new StringEntity(bodyJson.toString());

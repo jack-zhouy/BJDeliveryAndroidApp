@@ -16,4 +16,8 @@
         <item>赊销</item>
     </string-array>
 
+    <string-array name="spinner_array_payType_special">
+        <item>现金支付</item>
+    </string-array>
+
 </resources>

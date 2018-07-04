@@ -27,6 +27,13 @@ public class NetUrlConstant {
 	public static final String SYSUSERQUERYURL = "http://47.106.71.160/api/sysusers";  //系统用户信息查询
 
 
+	public static final String UNINTERRUPTORDERSURL = "http://47.106.71.160/api/UninterruptOrders";  //不间断供气订单信息查询
+	public static final String UNINTERRUPTORDERSCACULATEURL = "http://47.106.71.160/api/UninterruptOrders/Caculate";  //不间断定气订单价格计算
+	public static final String UNINTERRUPTORDERSPAYURL = "http://47.106.71.160/api/UninterruptOrders/Pay";  //7.10.	不间断定气订单支付
+
+
+
+
 
 
 

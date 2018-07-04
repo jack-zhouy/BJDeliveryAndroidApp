@@ -127,6 +127,12 @@
             android:screenOrientation="portrait"
             android:launchMode="singleTop"
             android:label="我的气瓶"/>
+        <activity android:name=".ui.OrderSpecialDealActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="托盘订单支付"/>
+
+
 
 
         <activity android:name=".MainActivity"

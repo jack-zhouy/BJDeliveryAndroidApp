@@ -147,6 +147,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private ImageView m_imageAddKPManual; //手动输入空瓶号
 	private ImageView m_imageAddZPManual; //手动输入重瓶号
 
+	private boolean isSpecialOrder;//是否是托盘订单
+
 
 	/**
 	 * 暂停Activity，界面获取焦点，按钮可以点击
@@ -292,6 +294,12 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			JSONObject addressJson = m_OrderJson.getJSONObject("recvAddr");
 			m_customerAddress = addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
 
+//判断是不是托盘订单
+			JSONObject orderTriggerTypeJson = m_OrderJson.getJSONObject("orderTriggerType");
+			isSpecialOrder = false;
+			if(orderTriggerTypeJson!=null&&(orderTriggerTypeJson.get("index").toString().equals("1"))){
+				isSpecialOrder = true;
+			}
 
 
 
@@ -489,118 +497,19 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		setListViewHeightBasedOnChildren(m_listView_zp);
 	}
 
-	//空瓶删除函数
-	private void deleteKP(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("删除钢瓶:  "+m_BottlesListKP.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_BottlesListKP.remove(position);
-				refleshBottlesListKP();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
-	}
-
-	//重瓶删除函数
-	private void deleteZP(final int position){
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setMessage("删除钢瓶:  "+m_BottlesListZP.get(position)+"   ?");
-		dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				m_BottlesListZP.remove(position);
-				refleshBottlesListZP();
-			}
-		});
-		dialog.setNegativeButton("取消", new DialogInterface.OnClickListener() {
-
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-			}
-		});
-		dialog.show();
-	}
-
-	/**
-	 * 读取NFC标签文本数据
-	 */
-	private String readNfcTag(Intent intent) {
-		String strText = null;
-		if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())) {
-			Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
-					NfcAdapter.EXTRA_NDEF_MESSAGES);
-			NdefMessage msgs[] = null;
-			int contentSize = 0;
-			if (rawMsgs != null) {
-				msgs = new NdefMessage[rawMsgs.length];
-				for (int i = 0; i < rawMsgs.length; i++) {
-					msgs[i] = (NdefMessage) rawMsgs[i];
-					contentSize += msgs[i].toByteArray().length;
-				}
-			}
-			try {
-				if (msgs != null) {
-					NdefRecord record = msgs[0].getRecords()[0];
-					strText = parseTextRecord(record);
-					return strText;
-				}
-			} catch (Exception e) {
-
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * 解析NDEF文本数据，从第三个字节开始，后面的文本数据
-	 *
-	 * @param ndefRecord
-	 * @return
-	 */
-	public static String parseTextRecord(NdefRecord ndefRecord) {
-		/**
-		 * 判断数据是否为NDEF格式
-		 */
-		//判断TNF
-		if (ndefRecord.getTnf() != NdefRecord.TNF_WELL_KNOWN) {
-			return null;
-		}
-		//判断可变的长度的类型
-		if (!Arrays.equals(ndefRecord.getType(), NdefRecord.RTD_TEXT)) {
-			return null;
-		}
-		try {
-			//获得字节数组，然后进行分析
-			byte[] payload = ndefRecord.getPayload();
-			//下面开始NDEF文本数据第一个字节，状态字节
-			//判断文本是基于UTF-8还是UTF-16的，取第一个字节"位与"上16进制的80，16进制的80也就是最高位是1，
-			//其他位都是0，所以进行"位与"运算后就会保留最高位
-			String textEncoding = ((payload[0] & 0x80) == 0) ? "UTF-8" : "UTF-16";
-			//3f最高两位是0，第六位是1，所以进行"位与"运算后获得第六位
-			int languageCodeLength = payload[0] & 0x3f;
-			//下面开始NDEF文本数据第二个字节，语言编码
-			//获得语言编码
-			String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
-			//下面开始NDEF文本数据后面的字节，解析出文本
-			String textRecord = new String(payload, languageCodeLength + 1,
-					payload.length - languageCodeLength - 1, textEncoding);
-			return textRecord;
-		} catch (Exception e) {
-			throw new IllegalArgumentException();
-		}
-	}
 	//单个钢瓶交接
 	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP) {
+		//如果是托盘订单，只允许最多一个空瓶和一个重瓶
+		if(isSpecialOrder){
+			if(isKP&&(m_BottlesListKP.size()>=1)) {
+				Toast.makeText(BottleExchangeActivity.this, "不间断供气订单，空瓶数量不得多于一瓶！",
+						Toast.LENGTH_LONG).show();
+			}else if (!isKP&&(m_BottlesListZP.size()>=1)){
+				Toast.makeText(BottleExchangeActivity.this, "不间断供气订单，重瓶数量不得多于一瓶！",
+						Toast.LENGTH_LONG).show();
+			}
+		}
 		//如果存在交接记录表里，就提示已经存在了
 		boolean contained = false;
 		if (isKP){
@@ -695,16 +604,45 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private Handler handler_old = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
+
+
+
+			//如果是托盘订单，需要检查空重瓶数量
 			m_buttonNext.setText("下一步");
 			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
 			m_buttonNext.setEnabled(true);
 			super.handleMessage(msg);
 
-			Intent intent = new Intent();
-			//将传过来的任务订单参数传到下一个页面
-			intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
-			intent.putExtras(m_bundle);
-			startActivity(intent);
+			//将第一个空瓶号和重瓶号传到下一个页面，用于不间断供气计费
+			if(isSpecialOrder){
+				if(m_BottlesListZP.size()!=1){
+					Toast.makeText(BottleExchangeActivity.this, "托盘订单需要扫重瓶码！",
+							Toast.LENGTH_LONG).show();
+					return;
+				}else {
+					m_bundle.putString("zpCode", m_BottlesListZP.get(0));
+				}
+				if(m_BottlesListKP.size()==1){
+					m_bundle.putString("kpCode", m_BottlesListKP.get(0));
+				}else {
+				}
+				Intent intent = new Intent();
+				//将传过来的任务订单参数传到托盘订单计费页面
+				intent.setClass(BottleExchangeActivity.this, OrderSpecialDealActivity.class);
+
+				intent.putExtras(m_bundle);
+				startActivity(intent);
+			}else{
+				Intent intent = new Intent();
+				//将传过来的任务订单参数传到下一个页面
+				intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
+
+				intent.putExtras(m_bundle);
+				startActivity(intent);
+			}
+
+
+
 
 
 		}
@@ -1024,8 +962,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					}
 				}
 				break;
-				default:
-					break;
+			default:
+				break;
 		}
 		return true;
 	}

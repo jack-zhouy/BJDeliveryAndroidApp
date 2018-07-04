@@ -99,6 +99,7 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
             String taskId = taskOrderJson.getString("id");
             JSONObject orderJson = taskOrderJson.getJSONObject("object");
 
+
             bundle.putString("taskId", taskId);
             bundle.putInt("orderStatus", 1);//待派送
             bundle.putString("order", orderJson.toString());
@@ -149,10 +150,31 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
                                 MyOrdersActivity.m_taskOrderListJson = taskOrdersListJson;//获取任务订单列表
 
                                 for(int i=0;i<taskOrdersListJson.length(); i++){
+
+
                                     JSONObject taskorder = taskOrdersListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
                                     JSONObject order = taskorder.getJSONObject("object");  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
+                                    //判断是不是托盘订单
+                                    boolean isSpecialOrder = false;
+                                    if(!order.has("orderTriggerType")){
+                                    }else{
+                                        String orderTriggerTypeStr =  order.get("orderTriggerType").toString();
+                                        if(!orderTriggerTypeStr.equals("null")){
+                                            JSONObject orderTriggerTypeJson = order.getJSONObject("orderTriggerType");
+                                            if(orderTriggerTypeJson!=null&&(orderTriggerTypeJson.get("index").toString().equals("1"))){
+                                                isSpecialOrder=true;
+                                            }
+                                        }
+
+                                    }
+                                    //=================
                                     Map<String,Object> orderInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-                                    orderInfo.put("orderSn", "订单编号："+order.get("orderSn").toString());  //订单编号
+                                    if(isSpecialOrder){
+                                        orderInfo.put("orderSn", "☆订单编号："+order.get("orderSn").toString());  //订单编号
+                                    }else{
+                                        orderInfo.put("orderSn", "订单编号："+order.get("orderSn").toString());  //订单编号
+                                    }
+
                                     orderInfo.put("createTime", "下单时间："+order.get("createTime").toString());  //创建时间
                                     JSONObject addressJson = order.getJSONObject("recvAddr");
                                     orderInfo.put("address", addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString());  //收货地址
