@@ -265,6 +265,8 @@ public class AmapLocationService extends Service {
 			HttpResponse httpResponse=httpClient.execute(httpRequest);
 
 			HttpResponse httpResponse1 = httpResponse;
+			JSONObject bodyJsona = new JSONObject();  ;
+			bodyJsona.put("longitude", location.longitude);
 
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block

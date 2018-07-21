@@ -153,6 +153,10 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
 
 
                                     JSONObject taskorder = taskOrdersListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
+                                    //如果是脏数据就过滤！
+                                    if(taskorder.getString("object").equals("null")){
+                                        continue;
+                                    }
                                     JSONObject order = taskorder.getJSONObject("object");  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
                                     //判断是不是托盘订单
                                     boolean isSpecialOrder = false;
@@ -251,5 +255,23 @@ public class MyOrdersActivity extends BaseActivity implements OnClickListener,Ab
     @Override
     protected void onDestroy() {
         super.onDestroy();
+    }
+
+    @Override
+    protected void onRestart() {
+        // TODO Auto-generated method stub
+        super.onRestart();
+        refleshVaildOrders();
+
+    }
+    @Override
+    protected void onResume() {
+        // TODO Auto-generated method stub
+        super.onResume();
+    }
+    @Override
+    protected void onStart() {
+        // TODO Auto-generated method stub
+        super.onStart();
     }
 }

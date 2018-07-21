@@ -72,9 +72,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.gc.nfc.utils.SharedPreferencesHelper;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-
+import android.view.Gravity;
+import android.view.WindowManager;
+import android.widget.LinearLayout;
+import android.util.DisplayMetrics;
 public class StockManagerActivity extends BaseActivity implements OnClickListener  {
 	BleNfcDeviceService mBleNfcDeviceService;
 	private BleNfcDevice bleNfcDevice;
@@ -113,6 +118,9 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 	private TextView m_textView_Department; //责任部门
 	private String m_takerOverUserId;//出库为dest人员·入库为src人员
 	private String m_takeOverGroupCode;//交接人角色信息
+
+	private Toast toast = null;
+	TextView tv;//toast--view
 	/*
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
@@ -171,7 +179,9 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		});
 		m_takerOverUserId = null;
 		//获取责任部门
-		m_textView_Department.setText(m_curLoginUserId.getDepartmentName());
+		String username = m_curLoginUserId.getUsername();
+		m_textView_Department.setText(username+"("+m_curLoginUserId.getGroupName()+"|"+m_curLoginUserId.getDepartmentName()+")");
+
 		//蓝牙设备初始化
 		blueDeviceInitial();
 
@@ -220,15 +230,16 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 				cleanAll();
 				break;
 			case R.id.imageView_addZPManual://手动添加钢瓶号
-				if(m_takerOverUserId == null){//
-					Toast.makeText(StockManagerActivity.this, "请扫码获取交接人信息！",	Toast.LENGTH_LONG).show();
+				//后面讨论如何处理第一次入库
+				if(m_takerOverUserId == null){
+					showToast("请扫码获取交接人信息！");
 					return;
 				}
 				String bottleCode = m_bottleIdZPEditText.getText().toString();
 				String bottleStatus = new String();
 				if(m_selected_nfc_model==0){//ruku
 					if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
-							bottleStatus = "2";//门店库存
+						bottleStatus = "2";//门店库存
 					}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
 						bottleStatus = "1";//充气站库存
 					}else{
@@ -252,7 +263,7 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 						Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
 						return;
 					}
-					bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, true);//钢瓶入库
+					bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, false);//钢瓶出库
 				}
 
 				break;
@@ -308,31 +319,28 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 						if(response.getStatusLine().getStatusCode()==200){
 							try {
 								JSONObject responseJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-								JSONArray userJsonArray = responseJson.getJSONArray("items");
-								if(userJsonArray.length()==1){
-									JSONObject userJson = userJsonArray.getJSONObject(0);
-									JSONObject groupJson = userJson.getJSONObject("userGroup");
-									String groupCode = groupJson.optString("code");
-									String userId = userJson.optString("userId");
-									String userName	 = userJson.optString("name");
-									String groupName	 = groupJson.optString("name");
-									m_takeOverGroupCode = groupCode;
-									if(groupCode.equals("00007")){//配送车
-										m_takerOverUserId = userId;
-										m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
-									}else if(groupCode.equals("00003")){//配送工
-										m_takerOverUserId = userId;
-										m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
-									}else {
-										Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
-									}
-								}else{
-									Toast.makeText(StockManagerActivity.this, "无效账户，请更换！",	Toast.LENGTH_LONG).show();
 
+
+								JSONObject userJson = responseJson;
+								JSONObject groupJson = userJson.getJSONObject("userGroup");
+								String groupCode = groupJson.optString("code");
+								String userId = userJson.optString("userId");
+								String userName	 = userJson.optString("name");
+								String groupName	 = groupJson.optString("name");
+								m_takeOverGroupCode = groupCode;
+								if(groupCode.equals("00007")){//配送车
+									m_takerOverUserId = userId;
+									m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
+								}else if(groupCode.equals("00003")){//配送工
+									m_takerOverUserId = userId;
+									m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
+								}else {
+									Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
 								}
 
+
 							}catch (IOException e){
-								Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
+								Toast.makeText(StockManagerActivity.this, "无效账户！",
 										Toast.LENGTH_LONG).show();
 								Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
 								startActivity(intent);
@@ -346,10 +354,10 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 							}
 
 						}else{
-							Toast.makeText(StockManagerActivity.this, "异常错误，请求交接人信息失败", Toast.LENGTH_LONG).show();
-							Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-							startActivity(intent);
-							finish();
+							Toast.makeText(StockManagerActivity.this, "请求交接人信息失败", Toast.LENGTH_LONG).show();
+//							Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+//							startActivity(intent);
+//							finish();
 						}
 					}else {
 						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
@@ -392,7 +400,13 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 
 	//单个钢瓶交接
 	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isRuKu) {
+		//后面讨论如何处理第一次入库
+		if(m_takerOverUserId == null){
+			showToast("请扫码获取交接人信息！");
+			return;
+		}
 		//如果存在交接记录表里，就提示已经存在了
+
 		boolean contained = false;
 
 		for(int i=0; i<m_BottlesListZP.size();i++){
@@ -404,8 +418,8 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 
 
 		if(contained){//已经存在了
-			Toast.makeText(StockManagerActivity.this, "钢瓶号："+bottleCode+"    请勿重复提交！",
-					Toast.LENGTH_LONG).show();
+			showToast("钢瓶号："+bottleCode+"    请勿重复提交！");
+
 			return;
 		}
 
@@ -517,6 +531,7 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 			}
 		}
 		if (!contained) {//第一次扫
+			showToast(bottleCode);
 			m_BottlesListZP.add(bottleCode);
 			refleshBottlesListZP();
 		}
@@ -910,8 +925,9 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 					}).start();
 					break;
 				case 0x88:
+					//后面讨论如何处理第一次入库
 					if(m_takerOverUserId == null){//
-						Toast.makeText(StockManagerActivity.this, "请扫码获取交接人信息！",	Toast.LENGTH_LONG).show();
+						showToast("请扫码获取交接人信息！");
 						return;
 					}
 					String bottleCode = msg.obj.toString();
@@ -942,7 +958,7 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 							Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
 							return;
 						}
-						bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, true);//钢瓶出库
+						bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, false);//钢瓶出库
 					}
 					break;
 
@@ -1002,17 +1018,7 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
 								}
 							})
-					.setNegativeButton("取消",
-							new DialogInterface.OnClickListener()
-							{
-								@Override
-								public void onClick(DialogInterface dialog,
-													int which)
-								{
-
-								}
-							})
-					.setNegativeButton("重新登陆",
+					.setNegativeButton("退出登录",
 							new DialogInterface.OnClickListener()
 							{
 								@Override
@@ -1031,6 +1037,8 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		}
 	}
 	private void loginOut(){
+		SharedPreferencesHelper.put("username", "");
+		SharedPreferencesHelper.put("password", "");
 		// get请求
 		NetRequestConstant nrc = new NetRequestConstant();
 		nrc.setType(HttpRequestType.GET);
@@ -1064,5 +1072,31 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 			}
 		}, nrc);
 	}
+
+	private void showToast(String info){
+		if(toast ==null){
+			toast = Toast.makeText(StockManagerActivity.this, null, Toast.LENGTH_SHORT);
+			toast.setGravity(Gravity.CENTER, 0, 0);
+			LinearLayout toastView = (LinearLayout)toast.getView();
+			WindowManager wm = (WindowManager)this.getSystemService(this.WINDOW_SERVICE);
+			DisplayMetrics outMetrics = new DisplayMetrics();
+			wm.getDefaultDisplay().getMetrics(outMetrics);
+			tv=new TextView(this);
+			toastView.getBackground().setAlpha(0);//0~255透明度值
+			//toastView.setBackgroundResource(R.drawable.ic_menu_deal_on);
+			tv.setTextSize(40);
+			tv.setTextColor(getResources().getColor(R.color.colorAccent));
+			toastView.setGravity(Gravity.CENTER);
+			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+					LinearLayout.LayoutParams.WRAP_CONTENT);
+			params.setMargins(0, 0, 0, 180);
+			tv.setLayoutParams(params);
+			toast.setView(toastView);
+			toastView.addView(tv);
+		}
+		tv.setText(info);
+		toast.show();
+	}
+
 
 }

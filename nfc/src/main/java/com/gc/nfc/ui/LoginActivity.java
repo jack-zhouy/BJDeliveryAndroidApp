@@ -228,7 +228,7 @@ public class LoginActivity  extends BaseActivity implements OnClickListener {
 									finish();
 								}else if(groupCode.equals("00007")){//调拨员
 									Toast.makeText(LoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
-									Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
+									Intent intent = new Intent(getApplicationContext() , DiaoBoActivity.class);
 									startActivity(intent);
 									finish();
 								}

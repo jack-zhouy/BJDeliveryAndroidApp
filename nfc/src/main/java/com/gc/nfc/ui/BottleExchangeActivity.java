@@ -125,7 +125,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private SwipeRefreshLayout swipeRefreshLayout;
 	private AppContext appContext;
 	private JSONObject m_OrderJson;//订单详情
-	private String m_businessKey;//订单号
+	private String m_orderId;//订单号
 
 	private String m_customerAddress;//用户地址
 
@@ -291,6 +291,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			JSONObject customerJson = m_OrderJson.getJSONObject("customer");
 			m_curUserId = customerJson.get("userId").toString();
 
+			m_orderId = m_OrderJson.get("orderSn").toString();
+
 			JSONObject addressJson = m_OrderJson.getJSONObject("recvAddr");
 			m_customerAddress = addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
 
@@ -320,7 +322,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				m_buttonNext.setText("正在提交...");
 				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
 				m_buttonNext.setEnabled(false);
-				handler_old.sendEmptyMessageDelayed(0,3000);
+				handler_old.sendEmptyMessageDelayed(0,2000);
 
 
 				break;
@@ -604,6 +606,9 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private Handler handler_old = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
+
+				//上传瓶号
+			upLoadGasCylinder();
 
 
 
@@ -1131,6 +1136,51 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			}
 			searchNearestBleDevice();
 		}
+	}
+
+
+	//上传回收瓶号
+	private boolean upLoadGasCylinder() {
+
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.PUT);
+
+		nrc.requestUrl = NetUrlConstant.ORDERURL+"/"+m_orderId;
+		nrc.context = this;
+		Map<String, Object> body = new HashMap<String, Object>();
+
+		body.put("recycleGasCylinder",m_BottlesListKP.toString());//空瓶号上传
+		body.put("deliveryGasCylinder",m_BottlesListZP.toString());//重瓶号上传　
+
+		nrc.setBody(body);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+
+						}else if(response.getStatusLine().getStatusCode()==404){
+							Toast.makeText(BottleExchangeActivity.this, "订单不存在",
+									Toast.LENGTH_LONG).show();
+						} else{
+							Toast.makeText(BottleExchangeActivity.this, "瓶号上传失败"+response.getStatusLine().getStatusCode(),
+									Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+		return true;
+
+
 	}
 
 }

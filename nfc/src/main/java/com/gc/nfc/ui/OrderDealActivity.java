@@ -1090,8 +1090,11 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 							}else if(response.getStatusLine().getStatusCode()==404){
 								Toast.makeText(OrderDealActivity.this, "订单不存在",
 										Toast.LENGTH_LONG).show();
-							} else{
-								Toast.makeText(OrderDealActivity.this, "支付失败"+response.getStatusLine().getStatusCode(),
+							} else if(response.getStatusLine().getStatusCode()==401){
+								Toast.makeText(OrderDealActivity.this, "鉴权失败，请重新登录"+response.getStatusLine().getStatusCode(),
+										Toast.LENGTH_LONG).show();
+							}else{
+								Toast.makeText(OrderDealActivity.this, "支付失败" + response.getStatusLine().getStatusCode(),
 										Toast.LENGTH_LONG).show();
 							}
 						}else {

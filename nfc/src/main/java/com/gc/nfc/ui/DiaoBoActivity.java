@@ -1,38 +1,35 @@
 package com.gc.nfc.ui;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
 import com.gc.nfc.common.NetRequestConstant;
 import com.gc.nfc.common.NetUrlConstant;
 import com.gc.nfc.domain.User;
 import com.gc.nfc.interfaces.Netcallback;
-import com.gc.nfc.utils.NetUtil;
+import com.gc.nfc.utils.AmapLocationService;
 import com.gc.nfc.utils.SharedPreferencesHelper;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.Image;
-import android.media.MediaPlayer;
-import android.os.Bundle;
-import android.view.Gravity;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
-import android.widget.Toast;
-
 import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,11 +38,9 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MineActivity extends BaseActivity implements OnClickListener {
+public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 
 	private LinearLayout lL_myBottle;// 我的气瓶
-	private LinearLayout lL_myHistoryOrders;//历史订单
-	private LinearLayout lL_mySetting;//设置
 	private LinearLayout lL_myLogout;//退出登录
 
 	private TextView textview_username;
@@ -62,8 +57,8 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		appContext = (AppContext) getApplicationContext();
 		user = appContext.getUser();
 		if (user == null) {
-			Toast.makeText(MineActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
-			Intent intent = new Intent(MineActivity.this, AutoLoginActivity.class);
+			Toast.makeText(DiaoBoActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+			Intent intent = new Intent(DiaoBoActivity.this, AutoLoginActivity.class);
 			startActivity(intent);
 			finish();
 			return;
@@ -82,26 +77,23 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 			catch (IOException e){
 			}
 		}
+		//开启定位任务
+		isOpenGPS();
+		//开启定位
+		final Intent intentService = new Intent(this,AmapLocationService.class);
+		startService(intentService);
 	}
 
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
 		Intent intent;
 		switch (v.getId()) {
-			case R.id.lL_myHistoryOrders:// 历史订单
-				intent = new Intent(MineActivity.this, HistoryOrdersActivity.class);
-				startActivity(intent);
-				break;
 			case R.id.lL_myBottle:// 我的气瓶
-				intent = new Intent(MineActivity.this, MybottlesActivity.class);
+				intent = new Intent(DiaoBoActivity.this, MybottlesActivity.class);
 				Bundle bundle = new Bundle();
 				bundle.putString("userId",user.getUsername());
 				intent.putExtras(bundle);
 				startActivity(intent);
-				break;
-			case R.id.lL_mySetting:// 系统设置
-				Toast.makeText(MineActivity.this, "敬请期待！",
-						Toast.LENGTH_LONG).show();
 				break;
 			case R.id.lL_myLogout:// 退出登录
 				loginOut();
@@ -117,10 +109,8 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 
 	@Override
 	void init() {
-		setContentView(R.layout.activity_mine);
+		setContentView(R.layout.activity_diaobo);
 		lL_myBottle = (LinearLayout) findViewById(R.id.lL_myBottle);// 我的气瓶
-		lL_myHistoryOrders = (LinearLayout) findViewById(R.id.lL_myHistoryOrders);//历史订单
-		lL_mySetting = (LinearLayout) findViewById(R.id.lL_mySetting);//历史订单
 		lL_myLogout = (LinearLayout) findViewById(R.id.lL_myLogout);//退出登录
 		imageView_userQRcode  = (ImageView) findViewById(R.id.imageView_userQRcode);//二维码用户身份
 
@@ -130,8 +120,6 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 
 
 		lL_myBottle.setOnClickListener(this);
-		lL_myHistoryOrders.setOnClickListener(this);
-		lL_mySetting.setOnClickListener(this);
 		lL_myLogout.setOnClickListener(this);
 		imageView_userQRcode.setOnClickListener(this);
 
@@ -163,14 +151,14 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 									startActivity(intent);
 									finish();
 						}else{
-							Toast.makeText(MineActivity.this, "退出登录失败", Toast.LENGTH_LONG).show();
+							Toast.makeText(DiaoBoActivity.this, "退出登录失败", Toast.LENGTH_LONG).show();
 						}
 					}else {
-						Toast.makeText(MineActivity.this, "未知错误，异常！",
+						Toast.makeText(DiaoBoActivity.this, "未知错误，异常！",
 								Toast.LENGTH_LONG).show();
 					}
 				} else {
-					Toast.makeText(MineActivity.this, "网络未连接！",
+					Toast.makeText(DiaoBoActivity.this, "网络未连接！",
 							Toast.LENGTH_LONG).show();
 				}
 			}
@@ -213,7 +201,59 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		}
 		catch (IOException e){
 		}
+	}
 
+	public  void isOpenGPS(){
+		LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		if (!locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)){
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			dialog.setMessage("GPS未打开，本配送程序必须打开!");
+			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+					// 设置完成后返回到原来的界面
+					startActivityForResult(intent,0);
+				}
+			});
+			dialog.show();
+		}
+	}
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent event)
+	{
+		if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 &&event.getAction() == KeyEvent.ACTION_DOWN)        {
+			new AlertDialog.Builder(DiaoBoActivity.this).setTitle("提示")
+					.setMessage("确认退出吗？")
+					.setIcon(R.drawable.icon_logo)
+					.setPositiveButton("确定",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
+								}
+							})
+					.setNegativeButton("取消",
+							new DialogInterface.OnClickListener()
+							{
+								@Override
+								public void onClick(DialogInterface dialog,
+													int which)
+								{
+
+								}
+							})
+					.show();
+			return false;
+		}
+		else
+		{
+			return super.dispatchKeyEvent(event);
+		}
 	}
 }

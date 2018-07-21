@@ -115,12 +115,15 @@ public class AutoLoginActivity extends BaseActivity{
 									finish();
 								}else if(groupCode.equals("00007")){//调拨员
 									Toast.makeText(AutoLoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
-									Intent intent = new Intent(getApplicationContext() , MainlyActivity.class);
+									Intent intent = new Intent(getApplicationContext() , DiaoBoActivity.class);
 									startActivity(intent);
 									finish();
 								}else{
 									Toast.makeText(AutoLoginActivity.this, "非有效账户，请更换！",
 											Toast.LENGTH_LONG).show();
+									Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
+									startActivity(intent);
+									finish();
 								}
 
 

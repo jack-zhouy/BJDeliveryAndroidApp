@@ -12,6 +12,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gc.nfc.R;
@@ -40,6 +41,8 @@ public class MybottlesActivity extends BaseActivity implements OnClickListener,A
     }
     private SwipeRefreshLayout swipeRefreshLayout;
     public static JSONArray m_bottlesListJson; //我的钢瓶列表
+    private TextView m_totalCountTextView;//钢瓶总数
+
 
     private String m_userId;
 
@@ -80,7 +83,7 @@ public class MybottlesActivity extends BaseActivity implements OnClickListener,A
                 switchActivity(position);
             }
         });
-
+        m_totalCountTextView = (TextView) findViewById(R.id.textview_totalCount);
         swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.main_srl);
         swipeRefreshLayout.setColorSchemeResources(android.R.color.holo_blue_bright, android.R.color.holo_green_light,
                 android.R.color.holo_orange_light, android.R.color.holo_red_light);
@@ -124,9 +127,17 @@ public class MybottlesActivity extends BaseActivity implements OnClickListener,A
                     if(response!=null){
                         if(response.getStatusLine().getStatusCode()==200){
                             try {
+
                                 List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
                                 JSONObject bottlesJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+
+                                String strTotalCount = bottlesJson.get("total").toString();
+                                //更新钢瓶总数
+                                m_totalCountTextView.setText(strTotalCount);
+
                                 JSONArray bottlesListJson = bottlesJson.getJSONArray("items");
+
+
 
                                 MybottlesActivity.m_bottlesListJson = bottlesListJson;//获取钢瓶列表
 
