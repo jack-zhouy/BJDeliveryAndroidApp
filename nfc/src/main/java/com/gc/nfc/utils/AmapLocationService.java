@@ -10,8 +10,10 @@ import com.amap.api.location.AMapLocationQualityReport;
 import com.amap.api.maps.model.LatLng;
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
+import com.gc.nfc.common.NetRequestConstant;
 import com.gc.nfc.common.NetUrlConstant;
 import com.gc.nfc.domain.User;
+import com.gc.nfc.interfaces.Netcallback;
 import com.gc.nfc.ui.MainlyActivity;
 
 import android.content.Context;
@@ -33,6 +35,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -46,6 +49,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -211,6 +215,7 @@ public class AmapLocationService extends Service {
 		LatLng myLocation = new LatLng(latitude ,longitude);
 		m_appContext.setLocation(myLocation);
 		reportLocation(myLocation);//上报定位数据
+		sysUserKeepAlive();//心跳信息
 
 	}
 
@@ -264,7 +269,6 @@ public class AmapLocationService extends Service {
 			//发送请求并等待响应
 			HttpResponse httpResponse=httpClient.execute(httpRequest);
 
-			HttpResponse httpResponse1 = httpResponse;
 			JSONObject bodyJsona = new JSONObject();  ;
 			bodyJsona.put("longitude", location.longitude);
 
@@ -278,6 +282,34 @@ public class AmapLocationService extends Service {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	//心跳
+	private void sysUserKeepAlive() {
+		try {
+			HttpParams httpParams = new BasicHttpParams();
+			HttpConnectionParams.setConnectionTimeout(httpParams, 5000);
+			HttpConnectionParams.setSoTimeout(httpParams, 5000);
+
+			//创建一个HttpClient实例
+			DefaultHttpClient httpClient = new DefaultHttpClient(httpParams);
+			//建立HttpPost对象
+			String requestUrl = NetUrlConstant.SYSUSERKEEPALIVEURL;
+
+			requestUrl = requestUrl + "/" + m_userId;
+			HttpGet httpRequest = new HttpGet(requestUrl);
+			httpRequest.setHeader("Content-Type", "application/json");
+			//发送请求并等待响应
+			HttpResponse httpResponse = httpClient.execute(httpRequest);
+			if(httpResponse.getStatusLine().getStatusCode()!=200){
+
+			}
+
+
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

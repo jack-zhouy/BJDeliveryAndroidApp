@@ -33,7 +33,7 @@ public class NetUrlConstant {
 
 	public static final String GASCYNFACTORYURL = "http://www.yunnanbaijiang.com/api/GasCynFactory";  //6.5.	钢瓶厂家查询
 
-
+	public static final String SYSUSERKEEPALIVEURL = "http://www.yunnanbaijiang.com/api/sysusers/KeepAlive";  //2.4.	心跳信息
 
 
 

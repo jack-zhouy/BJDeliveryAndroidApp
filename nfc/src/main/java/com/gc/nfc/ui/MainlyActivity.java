@@ -44,6 +44,10 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import android.os.Handler;
+
+
+
 
 public class MainlyActivity extends TabActivity implements OnClickListener {
 
@@ -103,6 +107,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 //		LocationUtils.isOpenGPS();
 //		LocationUtils.getStatusListener();
 //		LocationReceiver.startLocation(this);
+
 	}
 
 	public void initView(){

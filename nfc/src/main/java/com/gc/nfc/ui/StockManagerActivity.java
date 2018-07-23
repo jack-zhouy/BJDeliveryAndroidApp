@@ -5,9 +5,11 @@ import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -18,6 +20,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Parcelable;
+import android.provider.Settings;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.KeyEvent;
 import android.view.View;
@@ -73,6 +76,7 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.gc.nfc.utils.AmapLocationService;
 import com.gc.nfc.utils.SharedPreferencesHelper;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -184,6 +188,12 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 
 		//蓝牙设备初始化
 		blueDeviceInitial();
+
+		//开启定位任务
+		isOpenGPS();
+		//开启定位
+		final Intent intentService = new Intent(this,AmapLocationService.class);
+		startService(intentService);
 
 	}
 
@@ -1097,6 +1107,22 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		tv.setText(info);
 		toast.show();
 	}
+	public  void isOpenGPS(){
+		LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		if (!locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)){
+			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+			dialog.setMessage("GPS未打开，本配送程序必须打开!");
+			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+					// 设置完成后返回到原来的界面
+					startActivityForResult(intent,0);
+				}
+			});
+			dialog.show();
+		}
+	}
 
 }
