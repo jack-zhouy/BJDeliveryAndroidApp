@@ -45,7 +45,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import android.os.Handler;
-
+import android.app.Notification;
 
 
 
@@ -100,8 +100,13 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		//开启定位任务
 		isOpenGPS();
 		//开启定位
+
+
 		final Intent intentService = new Intent(this,AmapLocationService.class);
 		startService(intentService);
+		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+		startService(intentServiceWatch);
+
 
 //		LocationUtils.setInstance(this);
 //		LocationUtils.isOpenGPS();

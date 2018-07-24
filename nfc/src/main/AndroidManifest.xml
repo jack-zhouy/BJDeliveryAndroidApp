@@ -58,10 +58,18 @@
             android:value="23533620dd15c0f3f59b3231fd6f7303"/>
         <service android:name="com.amap.api.location.APSService">
         </service>
+
         <service android:name="com.dk.bleNfc.BleNfcDeviceService" />
         <!-- 定位需要的服务 -->
-        <service android:name=".utils.AmapLocationService">
+        <service android:name=".utils.AmapLocationService"
+            android:enabled="true"
+            android:exported="true">
         </service>
+        <service
+            android:name=".utils.RomoteService"
+            android:process=":romoteservice"
+            android:enabled="true"
+            android:exported="true"></service>
         <activity android:name="com.amap.api.navi.AmapRouteActivity"
             android:theme="@android:style/Theme.NoTitleBar"
             android:configChanges="orientation|keyboardHidden|screenSize" />
@@ -139,8 +147,8 @@
 
 
         <activity android:name=".MainActivity"
-                  android:launchMode="singleTop"
-                  android:label="@string/str_entry"/>
+            android:launchMode="singleTop"
+            android:label="@string/str_entry"/>
         <activity android:name=".ui.RunAppActivity"
             android:launchMode="singleTop"
             android:label="@string/str_run_app"/>

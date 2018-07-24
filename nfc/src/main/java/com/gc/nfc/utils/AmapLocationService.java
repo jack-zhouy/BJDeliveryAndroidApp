@@ -14,9 +14,11 @@ import com.gc.nfc.common.NetRequestConstant;
 import com.gc.nfc.common.NetUrlConstant;
 import com.gc.nfc.domain.User;
 import com.gc.nfc.interfaces.Netcallback;
+import com.gc.nfc.ui.AutoLoginActivity;
 import com.gc.nfc.ui.MainlyActivity;
 
 import android.content.Context;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -52,7 +54,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import android.content.ServiceConnection;
+import android.content.ComponentName;
 
+import android.os.RemoteException;
+
+import app.project.IMyAidlInterface;
 /**
  * 高精度定位模式功能演示
  *
@@ -75,7 +82,7 @@ import android.os.PowerManager.WakeLock;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.NotificationManager;
-
+import android.support.annotation.Nullable;
 public class AmapLocationService extends Service {
 
 
@@ -90,20 +97,36 @@ public class AmapLocationService extends Service {
 	private WakeLock mWakeLock;
 
 
+	MyBinder binder;
+	MyConn conn;
+
+
 	//声明AMapLocationClient类对象
 	AMapLocationClient mLocationClient = null;
 	//声明AMapLocationClientOption对象
 	public AMapLocationClientOption mLocationOption = null;
 
-
+	MediaPlayer mMediaPlayer = null;
+	@Nullable
 	@Override
 	public IBinder onBind(Intent intent) {
-		return null;
+		return binder;
+	}
+	@Override
+	public void onDestroy() {
+		mWakeLock.release();
+		//开启远程服务
+		AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
+		//绑定远程服务
+		AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 	}
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		binder = new MyBinder();
+		conn = new MyConn();
+
 		netThread.start();
 		//初始化定位
 		mLocationClient = new AMapLocationClient(getApplicationContext());
@@ -112,33 +135,30 @@ public class AmapLocationService extends Service {
 		//初始化AMapLocationClientOption对象
 		mLocationOption = getDefaultOption();
 
+		netHandler.sendEmptyMessageDelayed(0x99,10000);
 
-
-		mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-		mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, this.getClass().getName());
-		if (mWakeLock != null) {
-			mWakeLock.acquire();
-		}
 		getPosition();
+		mMediaPlayer = MediaPlayer.create(this, R.raw.report_location);
+
 	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		m_appContext = (AppContext) getApplicationContext();
 		m_userId = m_appContext.getUser().getUsername();
-//		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-//		Notification.Builder builder = new Notification.Builder(this)
-//				.setContentTitle("百江燃气")
-//				.setContentText("百江配送持续运行中。")
-//				.setContentIntent(pendingIntent)
-//				.setSmallIcon(R.drawable.ic_launcher)
-//				.setWhen(System.currentTimeMillis())
-//				.setOngoing(true);
-//		Notification notification=builder.getNotification();
-//		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-//		startForeground(123456,notification);
-//		notifyManager.notify(1, notification);
-
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+		Notification.Builder builder = new Notification.Builder(this)
+				.setContentTitle("百江燃气")
+				.setContentText("百江配送持续运行中。")
+				.setContentIntent(pendingIntent)
+				.setSmallIcon(R.drawable.ic_launcher)
+				.setWhen(System.currentTimeMillis())
+				.setOngoing(true);
+		Notification notification=builder.getNotification();
+		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		startForeground(1,notification);
+		notifyManager.notify(1, notification);
+		this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 		return Service.START_STICKY;
 
 	}
@@ -162,7 +182,13 @@ public class AmapLocationService extends Service {
 							String timestr = data.getString("timestr");
 							upDatePosition(longitude, latitude, timestr);
 							break;
-
+						case 0x99: //获取电源锁
+							mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+							mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, this.getClass().getName());
+							if (mWakeLock != null) {
+								mWakeLock.acquire();
+							}
+							break;
 					}
 				};
 			};
@@ -202,6 +228,7 @@ public class AmapLocationService extends Service {
 			msg.setData(data);
 			msg.what = 0x1;
 			netHandler.sendMessage(msg);
+			mMediaPlayer.start();
 		}
 
 	};
@@ -234,13 +261,14 @@ public class AmapLocationService extends Service {
 		mOption.setWifiScan(true); //可选，设置是否开启wifi扫描。默认为true，如果设置为false会同时停止主动刷新，停止以后完全依赖于系统刷新，定位位置可能存在误差
 		mOption.setLocationCacheEnable(true); //可选，设置是否使用缓存定位，默认为true
 
-		mOption.setInterval(10000);//可选，设置定位间隔。默认为2秒
+		mOption.setInterval(15000);//可选，设置定位间隔。默认为2秒
 
 		return mOption;
 	}
 
 
 	private void reportLocation(LatLng location){
+
 		String result=null;
 		try {
 			HttpParams httpParams=new BasicHttpParams();
@@ -268,6 +296,8 @@ public class AmapLocationService extends Service {
 
 			//发送请求并等待响应
 			HttpResponse httpResponse=httpClient.execute(httpRequest);
+			if(httpResponse.getStatusLine().getStatusCode()!=200){
+			}
 
 			JSONObject bodyJsona = new JSONObject();  ;
 			bodyJsona.put("longitude", location.longitude);
@@ -314,5 +344,35 @@ public class AmapLocationService extends Service {
 			e.printStackTrace();
 		}
 	}
+
+
+
+
+
+
+	class MyBinder extends IMyAidlInterface.Stub {
+		@Override
+		public String getServiceName() throws RemoteException {
+			return AmapLocationService.class.getSimpleName();
+		}
+	}
+
+
+
+	class MyConn implements ServiceConnection {
+		@Override
+		public void onServiceConnected(ComponentName name, IBinder service) {
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName name) {
+			//开启远程服务
+			AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
+			//绑定远程服务
+			AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+		}
+	}
+
+
 
 }
