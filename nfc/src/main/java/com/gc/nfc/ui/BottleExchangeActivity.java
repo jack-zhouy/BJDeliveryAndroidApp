@@ -65,6 +65,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +92,7 @@ import com.dk.bleNfc.card.Ntag21x;
 import com.dk.bleNfc.BleManager.*;
 import android.bluetooth.BluetoothDevice;
 import com.gc.nfc.utils.*;
-
+import android.view.LayoutInflater;
 
 public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
 	BleNfcDeviceService mBleNfcDeviceService;
@@ -136,8 +137,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private Map<String,JSONObject> m_userBottlesMap;//当前订单用户的钢瓶
 	private Map<String,JSONObject> m_myBottlesMap;//当前配送工的钢瓶
 
-	private List<String> m_BottlesListKP;//重瓶表
-	private List<String> m_BottlesListZP;//空瓶表
+	private Map<String, String> m_BottlesMapKP;//重瓶表
+	private Map<String, String> m_BottlesMapZP;//空瓶表
 
 	private int m_selected_nfc_model;//0--空瓶 1--重瓶
 
@@ -200,8 +201,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			//数据结构初始化
 			m_userBottlesMap = new HashMap<String, JSONObject>();
 			m_myBottlesMap = new HashMap<String, JSONObject>();
-			m_BottlesListKP = new ArrayList<String>();
-			m_BottlesListZP = new ArrayList<String>();
+			m_BottlesMapKP = new HashMap<String,String>();
+			m_BottlesMapZP = new HashMap<String,String>();
 
 
 
@@ -219,6 +220,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_listView_kp.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+					//录入钢瓶重量
+					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
+					String bottleCode = bottleCodeTextView.getText().toString();
+					getBottleWeight(bottleCode, false);
 					//deleteKP(position);
 					return true;
 				}
@@ -226,6 +231,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+					//录入钢瓶重量
+					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
+					String bottleCode = bottleCodeTextView.getText().toString();
+					getBottleWeight(bottleCode, true);
 					//deleteZP(position);
 					return true;
 				}
@@ -458,21 +467,23 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//NFC更新空瓶表
 	private void refleshBottlesListKP(){
-		m_textViewTotalCountKP.setText(Integer.toString(m_BottlesListKP.size()));
+		m_textViewTotalCountKP.setText(Integer.toString(m_BottlesMapKP.size()));
 		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
-
-		for(int i=0;i<m_BottlesListKP.size(); i++){
+		for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_BottlesListKP.get(i));
+
+			bottleInfo.put("bottleCode", entry.getKey());
+			bottleInfo.put("bottleWeight", entry.getValue());
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 		}
+
 		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
 		SimpleAdapter simpleAdapter = new SimpleAdapter(
 				BottleExchangeActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
+				new String[]{"bottleCode","bottleWeight"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number,R.id.items_weight}) ;
 
 		m_listView_kp.setAdapter(simpleAdapter);
 		setListViewHeightBasedOnChildren(m_listView_kp);
@@ -480,21 +491,24 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//NFC更新重瓶表
 	private void refleshBottlesListZP(){
-		m_textViewTotalCountZP.setText(Integer.toString(m_BottlesListZP.size()));
+		m_textViewTotalCountZP.setText(Integer.toString(m_BottlesMapZP.size()));
 		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
 
-		for(int i=0;i<m_BottlesListZP.size(); i++){
+		for (Map.Entry<String, String> entry : m_BottlesMapZP.entrySet()) {
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_BottlesListZP.get(i));
+
+			bottleInfo.put("bottleCode", entry.getKey());
+			bottleInfo.put("bottleWeight", entry.getValue());
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 		}
+
 		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
 		SimpleAdapter simpleAdapter = new SimpleAdapter(
 				BottleExchangeActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
+				new String[]{"bottleCode","bottleWeight"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number,R.id.items_weight}) ;
 		m_listView_zp.setAdapter(simpleAdapter);
 		setListViewHeightBasedOnChildren(m_listView_zp);
 	}
@@ -502,31 +516,15 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//单个钢瓶交接
 	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP) {
-		//如果是托盘订单，只允许最多一个空瓶和一个重瓶
-		if(isSpecialOrder){
-			if(isKP&&(m_BottlesListKP.size()>=1)) {
-				Toast.makeText(BottleExchangeActivity.this, "不间断供气订单，空瓶数量不得多于一瓶！",
-						Toast.LENGTH_LONG).show();
-			}else if (!isKP&&(m_BottlesListZP.size()>=1)){
-				Toast.makeText(BottleExchangeActivity.this, "不间断供气订单，重瓶数量不得多于一瓶！",
-						Toast.LENGTH_LONG).show();
-			}
-		}
 		//如果存在交接记录表里，就提示已经存在了
 		boolean contained = false;
 		if (isKP){
-			for(int i=0; i<m_BottlesListKP.size();i++){
-				if(m_BottlesListKP.get(i).equals(bottleCode)){
-					contained = true;
-					break;
-				}
+			if(m_BottlesMapKP.containsKey(bottleCode)){
+				contained = true;
 			}
 		}else{
-			for(int i=0; i<m_BottlesListZP.size();i++){
-				if(m_BottlesListZP.get(i).equals(bottleCode)){
-					contained = true;
-					break;
-				}
+			if(m_BottlesMapZP.containsKey(bottleCode)){
+				contained = true;
 			}
 		}
 
@@ -620,17 +618,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 			//将第一个空瓶号和重瓶号传到下一个页面，用于不间断供气计费
 			if(isSpecialOrder){
-				if(m_BottlesListZP.size()!=1){
-					Toast.makeText(BottleExchangeActivity.this, "托盘订单需要扫重瓶码！",
-							Toast.LENGTH_LONG).show();
-					return;
-				}else {
-					m_bundle.putString("zpCode", m_BottlesListZP.get(0));
-				}
-				if(m_BottlesListKP.size()==1){
-					m_bundle.putString("kpCode", m_BottlesListKP.get(0));
-				}else {
-				}
+
+//				m_bundle.pu("zpCode", m_BottlesListZP.get(0));
+//
+//				m_bundle.putString("kpCode", m_BottlesListKP.get(0));
+
 				Intent intent = new Intent();
 				//将传过来的任务订单参数传到托盘订单计费页面
 				intent.setClass(BottleExchangeActivity.this, OrderSpecialDealActivity.class);
@@ -685,29 +677,16 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	}
 
 	private void addKP(final String bottleCode){
-		boolean contained = false;
-		for(int i=0; i<m_BottlesListKP.size();i++){
-			if(m_BottlesListKP.get(i).equals(bottleCode)){
-				contained = true;
-				break;
-			}
-		}
-		if(!contained){//第一次扫
-			m_BottlesListKP.add(bottleCode);
+
+		if(!m_BottlesMapKP.containsKey(bottleCode)){//第一次扫
+			m_BottlesMapKP.put(bottleCode, "");
 			refleshBottlesListKP();
 		}
 	}
 	private void addZP(String bottleCode) {
 
-		boolean contained = false;
-		for (int i = 0; i < m_BottlesListZP.size(); i++) {
-			if (m_BottlesListZP.get(i).equals(bottleCode)) {
-				contained = true;
-				break;
-			}
-		}
-		if (!contained) {//第一次扫
-			m_BottlesListZP.add(bottleCode);
+		if(!m_BottlesMapZP.containsKey(bottleCode)){//第一次扫
+			m_BottlesMapZP.put(bottleCode, "");
 			refleshBottlesListZP();
 		}
 
@@ -1150,8 +1129,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		nrc.context = this;
 		Map<String, Object> body = new HashMap<String, Object>();
 
-		body.put("recycleGasCylinder",m_BottlesListKP.toString());//空瓶号上传
-		body.put("deliveryGasCylinder",m_BottlesListZP.toString());//重瓶号上传　
+		body.put("recycleGasCylinder",m_BottlesMapKP.toString());//空瓶号上传
+		body.put("deliveryGasCylinder",m_BottlesMapZP.toString());//重瓶号上传　
 
 		nrc.setBody(body);
 		getServer(new Netcallback() {
@@ -1180,6 +1159,42 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		}, nrc);
 		return true;
 
+
+	}
+
+
+	private void getBottleWeight(String bottleCode, boolean isZP){
+		final String bottleCodeTemp = bottleCode;
+		final boolean isZPTemp = isZP;
+		LayoutInflater inflater = getLayoutInflater();
+		final View layout = inflater.inflate(R.layout.upload_weight,
+				null);
+		AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("请输入").setIcon(
+				R.drawable.icon_app).setView(
+				layout).setPositiveButton("确定",
+				new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog,
+										int which)
+					{
+						EditText et = (EditText)layout.findViewById(R.id.input_bottleWeight);
+						String weight = et.getText().toString();
+						//更新表单
+						if(isZPTemp){
+							m_BottlesMapZP.put(bottleCodeTemp, weight);
+							refleshBottlesListZP();
+						}else{
+							m_BottlesMapKP.put(bottleCodeTemp, weight);
+							refleshBottlesListKP();
+						}
+						//upLoadBottleWeight();//上传钢瓶重量
+					}
+				});
+		builder.setCancelable(false);
+		builder.show();
+	}
+	private void upLoadBottleWeight(){
 
 	}
 

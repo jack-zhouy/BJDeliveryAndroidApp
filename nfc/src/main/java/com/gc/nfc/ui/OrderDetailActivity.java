@@ -86,7 +86,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	private ImageView m_imageViewUserIcon;//用户头像
 
 	private TextView m_textViewTotalQuantity;//合计数量
-	private TextView m_textViewTotalMount;//合计金额
+	private TextView m_textViewTotalMountOrignal;//原价合计金额
+	private TextView m_textViewTotalMountDeal;//成交价合计金额
 
 
 	private ListView m_listView;// 商品详情
@@ -218,8 +219,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_textViewReserveTime = (TextView) findViewById(R.id.textview_reserveTime);
 			m_textViewPs = (TextView) findViewById(R.id.textview_ps);
 			m_textViewTotalQuantity = (TextView) findViewById(R.id.items_totalQuantity);
-			m_textViewTotalMount = (TextView) findViewById(R.id.items_totalMount);
-
+			m_textViewTotalMountOrignal = (TextView) findViewById(R.id.items_totalMountOrignal);
+			m_textViewTotalMountDeal = (TextView) findViewById(R.id.items_totalMountDeal);
 			m_textViewPassedTime = (TextView) findViewById(R.id.items_passedTime);
 
 
@@ -337,7 +338,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 		try {
 			int iTotalQuantity = 0;
 			//订单总价
-			m_textViewTotalMount.setText("￥"+m_OrderJson.getString("orderAmount"));
+			m_textViewTotalMountOrignal.setText("￥"+m_OrderJson.getString("originalAmount"));
+			m_textViewTotalMountDeal.setText("￥"+m_OrderJson.getString("orderAmount"));
 			//获取传过来的任务订单参数
 			JSONObject orderJson = m_OrderJson;
 			JSONArray orderDetailList = orderJson.getJSONArray("orderDetailList");
@@ -349,7 +351,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 				Map<String, Object> orderInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
 				orderInfo.put("goodName",  goodDetail.get("name").toString());  //商品名称
 				orderInfo.put("goodQuantity", "X"+orderDetail.get("quantity").toString());  //收货地址
-				orderInfo.put("dealPrice", "￥"+orderDetail.get("dealPrice").toString());  //用户信息
+				orderInfo.put("orignalPrice", "￥"+orderDetail.get("originalPrice").toString());  //原价
+				orderInfo.put("dealPrice", "￥"+orderDetail.get("dealPrice").toString());  //成交价
 
 				int iTempQuantity = Integer.parseInt(orderDetail.get("quantity").toString());
 				iTotalQuantity+=iTempQuantity;
@@ -357,14 +360,14 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 				list_map.add(orderInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 			}
 			//订单商品总数量
-			m_textViewTotalQuantity.setText(Integer.toString(iTotalQuantity));
+			m_textViewTotalQuantity.setText("X"+Integer.toString(iTotalQuantity));
 			//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
 			SimpleAdapter simpleAdapter = new SimpleAdapter(
 					OrderDetailActivity.this,/*传入一个上下文作为参数*/
 					list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 					R.layout.order_detail_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-					new String[]{"goodName", "goodQuantity", "dealPrice"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-					new int[]{R.id.items_goodName, R.id.items_goodQuantity, R.id.items_dealPrice});
+					new String[]{"goodName", "goodQuantity", "orignalPrice","dealPrice"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+					new int[]{R.id.items_goodName, R.id.items_goodQuantity,  R.id.items_orignalPrice,R.id.items_dealPrice});
 			//3、为listView加入适配器
 			m_listView.setAdapter(simpleAdapter);
 			setListViewHeightBasedOnChildren(m_listView);
