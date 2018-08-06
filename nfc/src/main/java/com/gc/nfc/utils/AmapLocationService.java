@@ -184,7 +184,7 @@ public class AmapLocationService extends Service {
 							break;
 						case 0x99: //获取电源锁
 							mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-							mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, this.getClass().getName());
+							mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, this.getClass().getName());
 							if (mWakeLock != null) {
 								mWakeLock.acquire();
 							}
@@ -228,7 +228,7 @@ public class AmapLocationService extends Service {
 			msg.setData(data);
 			msg.what = 0x1;
 			netHandler.sendMessage(msg);
-			mMediaPlayer.start();
+
 		}
 
 	};
@@ -246,8 +246,6 @@ public class AmapLocationService extends Service {
 
 	}
 
-
-
 	private AMapLocationClientOption getDefaultOption(){
 		AMapLocationClientOption mOption = new AMapLocationClientOption();
 		mOption.setLocationMode(AMapLocationMode.Hight_Accuracy);//可选，设置定位模式，可选的模式有高精度、仅设备、仅网络。默认为高精度模式
@@ -261,7 +259,7 @@ public class AmapLocationService extends Service {
 		mOption.setWifiScan(true); //可选，设置是否开启wifi扫描。默认为true，如果设置为false会同时停止主动刷新，停止以后完全依赖于系统刷新，定位位置可能存在误差
 		mOption.setLocationCacheEnable(true); //可选，设置是否使用缓存定位，默认为true
 
-		mOption.setInterval(15000);//可选，设置定位间隔。默认为2秒
+		mOption.setInterval(20000);//可选，设置定位间隔。默认为2秒
 
 		return mOption;
 	}
@@ -297,6 +295,9 @@ public class AmapLocationService extends Service {
 			//发送请求并等待响应
 			HttpResponse httpResponse=httpClient.execute(httpRequest);
 			if(httpResponse.getStatusLine().getStatusCode()!=200){
+				mMediaPlayer.start();
+			}else{
+
 			}
 
 			JSONObject bodyJsona = new JSONObject();  ;

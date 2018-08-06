@@ -131,7 +131,8 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
-		mHandler.sendEmptyMessage(1);
+		//TODO 以后增加订单的配送时间
+		//mHandler.sendEmptyMessage(1);
 	}
 	private Handler mHandler = new Handler() {
 		@Override

@@ -200,14 +200,14 @@
                     <TextView
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="180dp"
+                        android:layout_marginLeft="150dp"
                         android:layout_marginTop="10dp"
                         android:text="数量"
                         android:textColor="@color/popup_main_background"/>
                     <TextView
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="260dp"
+                        android:layout_marginLeft="210dp"
                         android:layout_marginTop="10dp"
                         android:text="原价"
                         android:textColor="@color/popup_main_background"/>
@@ -253,7 +253,7 @@
                         android:id="@+id/items_totalQuantity"
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="180dp"
+                        android:layout_marginLeft="150dp"
                         android:layout_marginTop="10dp"
                         android:text="数量"
                         android:textColor="@color/popup_main_background"/>
@@ -261,18 +261,19 @@
                         android:id="@+id/items_totalMountOrignal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="260dp"
+                        android:layout_marginLeft="210dp"
+                        android:layout_marginTop="10dp"
                         android:textColor="@color/colorAccent"
-                        android:textSize="22dp"
                         android:text="价格"/>
                     <TextView
                         android:id="@+id/items_totalMountDeal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginRight="10dp"
+                        android:layout_marginTop="5dp"
                         android:layout_alignParentRight="true"
                         android:textColor="@color/colorAccent"
-                        android:textSize="22dp"
+                        android:textSize="20dp"
                         android:text="价格"/>
                 </RelativeLayout>
             </LinearLayout>

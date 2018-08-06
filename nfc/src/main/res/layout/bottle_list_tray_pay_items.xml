@@ -20,6 +20,8 @@
         android:layout_marginTop="10dp"
         android:textColor="@color/textColorPrimary" />
 
+
+
     <TextView
         android:id="@+id/items_weight"
         android:layout_width="50dp"
