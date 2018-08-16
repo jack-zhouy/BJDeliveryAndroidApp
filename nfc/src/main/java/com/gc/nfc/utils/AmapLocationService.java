@@ -115,10 +115,10 @@ public class AmapLocationService extends Service {
 	@Override
 	public void onDestroy() {
 		mWakeLock.release();
-		//开启远程服务
-		AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
-		//绑定远程服务
-		AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+//		//开启远程服务
+//		AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
+//		//绑定远程服务
+//		AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class AmapLocationService extends Service {
 		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		startForeground(1,notification);
 		notifyManager.notify(1, notification);
-		this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+//		this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 		return Service.START_STICKY;
 
 	}
@@ -367,10 +367,10 @@ public class AmapLocationService extends Service {
 
 		@Override
 		public void onServiceDisconnected(ComponentName name) {
-			//开启远程服务
-			AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
-			//绑定远程服务
-			AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+//			//开启远程服务
+//			AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
+//			//绑定远程服务
+//			AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 		}
 	}
 

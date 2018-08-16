@@ -23,6 +23,7 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.provider.Settings;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -36,6 +37,7 @@ import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RadioButton;
@@ -95,6 +97,7 @@ import com.gc.nfc.utils.*;
 import android.view.LayoutInflater;
 import java.util.Set;
 import java.util.Iterator;
+import android.content.DialogInterface.OnDismissListener;
 
 
 public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
@@ -155,7 +158,13 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	private int m_updateWeightCount;//提交钢瓶重量次数计数
 
+	private boolean m_orderServiceQualityShowFlag;//是否是用户评价阶段
 
+	private String m_handedUserCard = null;//当前用户的用户卡
+
+
+	private Toast toast = null;
+	TextView tv;//toast--view
 	/**
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
@@ -254,7 +263,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			getMyBottles();//获取配送工名下的钢瓶号
 			//蓝牙设备初始化
 			blueDeviceInitial();
-
+			//默认刚开始是录钢瓶阶段
+			m_orderServiceQualityShowFlag = false;
+			//用户已有用户卡查询
+			GetUserCard();
 
 		}catch (JSONException e){
 			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
@@ -331,12 +343,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
-						Toast.LENGTH_LONG).show();
-				m_buttonNext.setText("正在提交...");
-				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
-				m_buttonNext.setEnabled(false);
-				handler_old.sendEmptyMessageDelayed(0,3000);
+//				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
+//						Toast.LENGTH_LONG).show();
+//				m_buttonNext.setText("正在提交...");
+//				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
+//				m_buttonNext.setEnabled(false);
 				//上传瓶号
 				upLoadGasCylinder();
 				//提交钢瓶重量
@@ -347,6 +358,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				for (Map.Entry<String, String> entry : m_BottlesMapZP.entrySet()) {
 					upLoadBottleWeight(entry.getKey(), entry.getValue(), true);
 				}
+
+				//用户评价阶段
+				orderServiceQualityShow();
+
 
 				break;
 			case R.id.imageView_KPEYE:// 用户的气瓶
@@ -619,9 +634,9 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		@Override
 		public void handleMessage(Message msg) {
 			//如果是托盘订单，需要检查空重瓶数量
-			m_buttonNext.setText("下一步");
-			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
-			m_buttonNext.setEnabled(true);
+//			m_buttonNext.setText("下一步");
+//			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+//			m_buttonNext.setEnabled(true);
 			super.handleMessage(msg);
 			//不间断供气的订单
 			if(isSpecialOrder){
@@ -941,10 +956,15 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				if (ntag21x != null) {
 					try {
 						//ntag21x.NdefTextWrite("KMA123456789");
-						String bottleCode = ntag21x.NdefTextRead();
+						String textRead = ntag21x.NdefTextRead();
 						Message msg = new Message();
-						msg.obj = bottleCode;
-						msg.what = 0x88;//标签读取事件
+						msg.obj = textRead;
+						if(m_orderServiceQualityShowFlag){
+							msg.what = 0x89;//评价阶段
+						}else{
+							msg.what = 0x88;//扫码钢瓶阶段
+						}
+
 						handler.sendMessage(msg);
 
 
@@ -1087,13 +1107,43 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 						}
 					}).start();
 					break;
-				case 0x88:
+				case 0x88://钢瓶扫描
 					String bottleCode = msg.obj.toString();
 					if(m_selected_nfc_model==0){//空瓶录入模式
 						bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", m_customerAddress+"|空瓶回收", false, true);//空瓶回收
 					}else if(m_selected_nfc_model==1){//重瓶录入模式
 						bottleTakeOverUnit(bottleCode,  m_deliveryUser.getUsername(), m_curUserId,"5", m_customerAddress+"|重瓶落户",false, false);//客户使用
 					}
+					break;
+				case 0x89://扫描用户卡
+					String readText = msg.obj.toString();
+					String textArray[] = readText.split(":");
+					if(textArray.length!=2){
+						showToast("无效卡格式！");
+						return;
+					}else {
+						String evaluate = textArray[0];
+						String userCardIndex = textArray[1];
+
+						if(m_handedUserCard==null){
+							showToast("该用户未绑定用户卡");
+						}
+						if(!userCardIndex.equals(m_handedUserCard)){
+							showToast("非本人卡号！");
+							return;
+						}
+						if(evaluate.equals("Y")){
+							showToast("满意！");
+							orderServiceQualityUpload(true);
+						}else if(evaluate.equals("N")){
+							showToast("不满意！");
+							orderServiceQualityUpload(false);
+						} else {
+							showToast("无效卡格式！");
+							return;
+						}
+					}
+
 					break;
 
 			}
@@ -1237,6 +1287,151 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				}
 			}
 		}, nrc);
+	}
+
+	//用户卡评价弹窗
+	private void orderServiceQualityShow(){
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		//builder.setCancelable(false);
+		View view = View.inflate(this, R.layout.user_evaluate, null);   // 账号、密码的布局文件，自定义
+		builder.setIcon(R.drawable.icon_logo);//设置对话框icon
+		builder.setTitle("用户卡评价("+m_handedUserCard+")");
+		AlertDialog dialog = builder.create();
+		dialog.setView(view);
+		dialog.setOnDismissListener(new OnDismissListener() {
+
+			@Override
+			public void onDismiss(DialogInterface dialog) {
+				//处理监听事件
+				m_orderServiceQualityShowFlag = false;
+			}
+		});
+		dialog.show();
+		Window dialogWindow = dialog.getWindow();//获取window对象
+		dialogWindow.setGravity(Gravity.CENTER);//设置对话框位置
+		dialogWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);//设置横向全屏
+		m_orderServiceQualityShowFlag = true;
+
+	}
+
+
+	//用户卡评价上传
+	private void orderServiceQualityUpload(boolean orderServiceValue){
+			// get请求
+			NetRequestConstant nrc = new NetRequestConstant();
+			nrc.setType(HttpRequestType.PUT);
+
+			nrc.requestUrl = NetUrlConstant.ORDERURL+"/"+m_orderId;
+			nrc.context = this;
+			Map<String, Object> body = new HashMap<String, Object>();
+
+			if(orderServiceValue){//满意
+				body.put("orderServiceQuality","OSQNegative");
+			}else{
+				body.put("orderServiceQuality","OSQPositive");
+			}
+			nrc.setBody(body);
+			getServer(new Netcallback() {
+				public void preccess(Object res, boolean flag) {
+					if(flag){
+						HttpResponse response=(HttpResponse)res;
+						if(response!=null){
+							if(response.getStatusLine().getStatusCode()==200){
+								//评价成功，跳转支付
+								handler_old.sendEmptyMessageDelayed(0,3000);
+
+							}else if(response.getStatusLine().getStatusCode()==404){
+								Toast.makeText(BottleExchangeActivity.this, "订单不存在",
+										Toast.LENGTH_LONG).show();
+							} else if(response.getStatusLine().getStatusCode()==401){
+								Toast.makeText(BottleExchangeActivity.this, "鉴权失败，请重新登录"+response.getStatusLine().getStatusCode(),
+										Toast.LENGTH_LONG).show();
+							}else{
+								Toast.makeText(BottleExchangeActivity.this, "支付失败" + response.getStatusLine().getStatusCode(),
+										Toast.LENGTH_LONG).show();
+							}
+						}else {
+							Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+									Toast.LENGTH_LONG).show();
+						}
+					} else {
+						Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+								Toast.LENGTH_LONG).show();
+					}
+				}
+			}, nrc);
+	}
+
+	private void showToast(String info){
+		if(toast ==null){
+			toast = Toast.makeText(BottleExchangeActivity.this, null, Toast.LENGTH_SHORT);
+			toast.setGravity(Gravity.CENTER, 0, 0);
+			LinearLayout toastView = (LinearLayout)toast.getView();
+			WindowManager wm = (WindowManager)this.getSystemService(this.WINDOW_SERVICE);
+			DisplayMetrics outMetrics = new DisplayMetrics();
+			wm.getDefaultDisplay().getMetrics(outMetrics);
+			tv=new TextView(this);
+			toastView.getBackground().setAlpha(0);//0~255透明度值
+			//toastView.setBackgroundResource(R.drawable.ic_menu_deal_on);
+			tv.setTextSize(40);
+			tv.setTextColor(getResources().getColor(R.color.colorAccent));
+			toastView.setGravity(Gravity.CENTER);
+			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+					LinearLayout.LayoutParams.WRAP_CONTENT);
+			params.setMargins(0, 0, 0, 180);
+			tv.setLayoutParams(params);
+			toast.setView(toastView);
+			toastView.addView(tv);
+		}
+		tv.setText(info);
+		toast.show();
+	}
+
+	//查询用户的用户卡号
+	private void GetUserCard() {
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+
+		nrc.requestUrl = NetUrlConstant.USERCARDURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+
+
+		params.put("userId",m_curUserId);
+		params.put("status", 1);//1 使用中
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag) {
+					HttpResponse response = (HttpResponse) res;
+					if (response != null) {
+						if (response.getStatusLine().getStatusCode() == 200) {
+							try {
+								JSONObject userCardsJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray userCardsListJson = userCardsJson.getJSONArray("items");
+								if(userCardsListJson.length()==1){
+									m_handedUserCard = userCardsListJson.getJSONObject(0).getString("number");
+								}else{
+									m_handedUserCard = null;
+									showToast("该用户未绑定用户卡");
+								}
+							} catch (JSONException e) {
+								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！" + e.getMessage(),
+										Toast.LENGTH_LONG).show();
+							} catch (IOException e) {
+								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！" + e.getMessage(),
+										Toast.LENGTH_LONG).show();
+							}
+						} else {
+							Toast.makeText(BottleExchangeActivity.this, "用户卡查询失败",
+									Toast.LENGTH_LONG).show();
+						}
+					} else {
+						Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+								Toast.LENGTH_LONG).show();
+					}
+				}}}, nrc);
 	}
 
 

@@ -289,7 +289,7 @@
             android:layout_marginTop="0dp"
             android:background="@drawable/button_select"
             android:padding="10dp"
-            android:text="下一步"
+            android:text="用户确认"
             android:textColor="@color/white"
             android:textSize="20sp" />
     </LinearLayout>

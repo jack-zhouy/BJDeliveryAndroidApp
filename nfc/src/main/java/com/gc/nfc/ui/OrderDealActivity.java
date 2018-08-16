@@ -483,7 +483,6 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 	}
 
-
 	//刷新支付状态
 	public void refleshPayStatus() {
 		// get请求

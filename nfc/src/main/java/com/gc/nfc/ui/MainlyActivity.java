@@ -33,6 +33,7 @@ import android.widget.Toast;
 import com.gc.nfc.utils.LocationUtils;
 import com.gc.nfc.utils.AmapLocationService;
 import com.gc.nfc.utils.NetUtil;
+import com.gc.nfc.utils.SharedPreferencesHelper;
 
 import android.view.KeyEvent;
 
@@ -104,8 +105,8 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 
 		final Intent intentService = new Intent(this,AmapLocationService.class);
 		startService(intentService);
-		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-		startService(intentServiceWatch);
+//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+//		startService(intentServiceWatch);
 
 
 //		LocationUtils.setInstance(this);
@@ -114,6 +115,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 //		LocationReceiver.startLocation(this);
 
 	}
+
 
 	public void initView(){
 		img_validorders=(ImageView) findViewById(R.id.img_vaildorders);
@@ -335,6 +337,5 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		// TODO Auto-generated method stub
 		super.onStart();
 	}
-
 
 }

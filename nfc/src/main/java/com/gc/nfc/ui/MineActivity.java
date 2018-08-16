@@ -213,7 +213,7 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		}
 		catch (IOException e){
 		}
-
-
 	}
+
+
 }

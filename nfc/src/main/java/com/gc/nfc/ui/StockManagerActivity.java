@@ -194,8 +194,8 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		//开启定位
 		final Intent intentService = new Intent(this,AmapLocationService.class);
 		startService(intentService);
-		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-		startService(intentServiceWatch);
+//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+//		startService(intentServiceWatch);
 
 	}
 
