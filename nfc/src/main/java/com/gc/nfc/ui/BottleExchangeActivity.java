@@ -1190,6 +1190,10 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 		body.put("recycleGasCylinder",m_BottlesMapKP.toString());//空瓶号上传
 		body.put("deliveryGasCylinder",m_BottlesMapZP.toString());//重瓶号上传　
+		//如果没有交接就不上传
+		if(m_BottlesMapKP.size()==0&&m_BottlesMapZP.size()==0){
+			return false;
+		}
 
 		nrc.setBody(body);
 		getServer(new Netcallback() {
@@ -1291,6 +1295,9 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	//用户卡评价弹窗
 	private void orderServiceQualityShow(){
+		//用户已有用户卡查询
+		GetUserCard();
+
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		//builder.setCancelable(false);
 		View view = View.inflate(this, R.layout.user_evaluate, null);   // 账号、密码的布局文件，自定义
@@ -1304,6 +1311,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			public void onDismiss(DialogInterface dialog) {
 				//处理监听事件
 				m_orderServiceQualityShowFlag = false;
+
 			}
 		});
 		dialog.show();
