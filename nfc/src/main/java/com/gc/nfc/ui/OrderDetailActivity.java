@@ -306,12 +306,22 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 			m_currentCustomerId = customerJson.get("userId").toString();
 			m_customerPhone = strUserPhone;
 
+			//获取客户公司
+			JSONObject customerCompany = customerJson.getJSONObject("customerCompany");
+			String customerCompanyName = customerCompany.get("name").toString();
+
+
 
 			//获取地址
 
 			JSONObject addressJson = orderJson.getJSONObject("recvAddr");
 			String strAddress = addressJson.get("city").toString()+addressJson.get("county").toString()+addressJson.get("detail").toString();
-			m_textViewAddress.setText(strAddress);
+			if(customerCompanyName.equals("无")){
+				m_textViewAddress.setText(strAddress);
+			}else{
+				m_textViewAddress.setText(strAddress+" ("+customerCompanyName+")");
+			}
+
 			m_recvAddr = strAddress;
 
 			//判断是不是气票用户

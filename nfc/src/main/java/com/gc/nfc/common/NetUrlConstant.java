@@ -3,7 +3,7 @@ package com.gc.nfc.common;
 public class NetUrlConstant {
 
 	public static final String BASEURL = "http://www.yunnanbaijiang.com";//系统基地址
-	//public static final String BASEURL = "http://www.yunnanbaijiang.com";//系统基地址
+	//public static final String BASEURL = "http://47.106.71.160";//系统基地址
 	public static final String LOGINURL = BASEURL+"/api/sysusers/login";//登录接口
 	public static final String LOGINOUTURL = BASEURL+"/api/sysusers/logout";//登出接口
 	public static final String TASKORDERSURL = BASEURL+"/api/TaskOrders";//任务订单接口

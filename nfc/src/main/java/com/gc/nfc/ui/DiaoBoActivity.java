@@ -82,8 +82,8 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		//开启定位
 		final Intent intentService = new Intent(this,AmapLocationService.class);
 		startService(intentService);
-//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-//		startService(intentServiceWatch);
+		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+		startService(intentServiceWatch);
 	}
 
 	public void onClick(View v) {

@@ -194,8 +194,8 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		//开启定位
 		final Intent intentService = new Intent(this,AmapLocationService.class);
 		startService(intentService);
-//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-//		startService(intentServiceWatch);
+		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+		startService(intentServiceWatch);
 
 	}
 
@@ -511,7 +511,7 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		nrc.context = this;
 		Map<String, Object> params = new HashMap<String, Object>();
 		Map<String, Object> body = new HashMap<String, Object>();
-		body.put("loadStatus","LSHeavy");//空瓶
+		body.put("loadStatus","LSHeavy");//重瓶
 		nrc.setParams(params);
 		nrc.setBody(body);
 		getServer(new Netcallback() {

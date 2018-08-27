@@ -1311,7 +1311,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			public void onDismiss(DialogInterface dialog) {
 				//处理监听事件
 				m_orderServiceQualityShowFlag = false;
-
 			}
 		});
 		dialog.show();

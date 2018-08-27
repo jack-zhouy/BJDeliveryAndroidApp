@@ -135,6 +135,10 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 	private boolean m_isTicketUser; //是否是气票用户
 
+	private boolean m_isMonthDealUser; //是否是月结用户
+
+	private boolean m_isCommonUser; //是否是普通用户
+
 
 	private Handler handler = new Handler(){
 		@Override
@@ -273,15 +277,27 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			getRecvLocation();
 			GetDepLeader();
 
+
+			//如果结算类型不是月结用户
+			if(!m_curUserSettlementType.get("code").toString().equals("00002")){
+				m_isMonthDealUser = false;
+			}else {
+				m_isMonthDealUser = true;
+			}
+
+
 			//如果结算类型不是普通用户，就隐藏支付方式选择
 			if(!m_curUserSettlementType.get("code").toString().equals("00001")){
 				m_spinnerPaytype.setVisibility(View.INVISIBLE);
 				m_textViewPaytype.setVisibility(View.VISIBLE);
 				m_textViewPaytype.setText(m_curUserSettlementType.get("name").toString());
+				m_isCommonUser = false;
+			}else {
+				m_isCommonUser = true;
 			}
 
 			//如果结算类型不是气票用户，就隐藏气票优惠券选择
-			if(!m_curUserSettlementType.get("code").toString().equals("00003")){
+			if(!m_curUserSettlementType.get("code").toString().equals("00003")){//气票客户
 				LinearLayout LinearLayout_ticketSelect = (LinearLayout) findViewById(R.id.LinearLayout_ticketSelect);
 				LinearLayout_ticketSelect.setVisibility(View.INVISIBLE);
 				LinearLayout LinearLayout_couponSelect = (LinearLayout) findViewById(R.id.LinearLayout_couponSelect);
@@ -657,15 +673,18 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			}
 			for (int i = 0; i < iTotalCount; i++) {
 				JSONObject tempTicketJson = m_ValidTicketJsonArray.getJSONObject(i);
-				String ticketInfo = "编号:"+tempTicketJson.getString("ticketSn")+"  规格:"+tempTicketJson.getString("specName");
+				//String ticketInfo = "编号:"+tempTicketJson.getString("ticketSn")+"  规格:"+tempTicketJson.getString("specName");
+				String ticketInfo = "序号:"+i+"  规格:"+tempTicketJson.getString("specName");
 				items[i] = ticketInfo;
 
 			}
 
 			// 创建一个AlertDialog建造者
 			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+
 			// 设置标题
 			alertDialogBuilder.setTitle("气票选择窗口");
+
 			// 参数介绍
 			// 第一个参数：弹出框的信息集合，一般为字符串集合
 			// 第二个参数：被默认选中的，一个布尔类型的数组
@@ -729,9 +748,9 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			}
 			for (int i = 0; i < iTotalCount; i++) {
 				JSONObject tempTicketJson = m_ValidCouponJsonArray.getJSONObject(i);
-				String couponInfo = "编号:"+tempTicketJson.getString("id")+"  规格:"+tempTicketJson.getString("specName");
+				//String couponInfo = "编号:"+tempTicketJson.getString("id")+"  规格:"+tempTicketJson.getString("specName");
+				String couponInfo = "序号:"+i+"  规格:"+tempTicketJson.getString("specName");
 				items[i] = couponInfo;
-
 			}
 
 			// 创建一个AlertDialog建造者
@@ -1043,8 +1062,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 		}
 	}
 
-	//非气票用户支付
-	private boolean commonUserPay() {
+	//用户支付方式提交
+	private boolean UserPay() {
 		try {
 			// get请求
 			NetRequestConstant nrc = new NetRequestConstant();
@@ -1054,28 +1073,34 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			nrc.context = this;
 			Map<String, Object> body = new HashMap<String, Object>();
 
-			//如果结算类型是普通用户，就需要提交支付方式参数
-			String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit"};//扫码，现金，赊销
-			if(m_curUserSettlementType.get("code").toString().equals("00001")){
-				body.put("payType",payTypes[m_spinnerPaytype.getSelectedItemPosition()]);//支付方式
-			}
-			//如果是扫码，支付状态没有支付就不允许提交订单
-			if(m_spinnerPaytype.getSelectedItemPosition()==0){
-				if(!m_orderPayStatus.equals("已支付")){
-					Toast.makeText(OrderDealActivity.this, "扫码支付结果未返回！",
-							Toast.LENGTH_LONG).show();
-					return false;
+			if(m_isCommonUser){
+				//如果结算类型是普通用户，就需要提交支付方式参数
+				String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit"};//扫码，现金，赊销
+				if(m_curUserSettlementType.get("code").toString().equals("00001")){//普通客户
+					body.put("payType",payTypes[m_spinnerPaytype.getSelectedItemPosition()]);//支付方式
 				}
+				//如果是扫码，支付状态没有支付就不允许提交订单
+				if(m_spinnerPaytype.getSelectedItemPosition()==0){
+					if(!m_orderPayStatus.equals("已支付")){
+						Toast.makeText(OrderDealActivity.this, "扫码支付结果未返回！",
+								Toast.LENGTH_LONG).show();
+						return false;
+					}
+				}
+				//如果是已支付，支付方式只能为扫码
+				if(m_orderPayStatus.equals("已支付")){
+					if(m_spinnerPaytype.getSelectedItemPosition()!=0) {
+						Toast.makeText(OrderDealActivity.this, "订单已经支付，确认支付类型为扫码？",
+								Toast.LENGTH_LONG).show();
+						return false;
+					}
+				}
+			}else if(m_isTicketUser){
+				body.put("payType","PTTicket");//气票支付方式
+			}else if(m_isMonthDealUser){
+				body.put("payType","PTMonthlyCredit");//月结支付方式
 			}
 
-			//如果是已支付，支付方式只能为扫码
-			if(m_orderPayStatus.equals("已支付")){
-				if(m_spinnerPaytype.getSelectedItemPosition()!=0) {
-					Toast.makeText(OrderDealActivity.this, "订单已经支付，确认支付类型为扫码？",
-							Toast.LENGTH_LONG).show();
-					return false;
-				}
-			}
 			body.put("payStatus","PSPaied");// 修改订单状态为已经支付
 			nrc.setBody(body);
 			getServer(new Netcallback() {
@@ -1231,7 +1256,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			}
 			if(m_orderPayStatus.equals("已支付")){
 				//完成配送
-				deliverOver();
+				UserPay();
 			}else{
 				if(m_isTicketUser){
 					if(isTicketsOrCouponsSelectedOK()){
@@ -1239,8 +1264,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 					}else{
 						Toast.makeText(OrderDealActivity.this, "优惠券、气票选择与实际商品数量不匹配！", Toast.LENGTH_LONG).show();
 					}
-				}else{
-					commonUserPay();
+				}else {
+					UserPay();
 				}
 			}
 			m_buttonNext.setText("下一步");
@@ -1249,6 +1274,4 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			super.handleMessage(msg);
 		}
 	};
-
-
 }
