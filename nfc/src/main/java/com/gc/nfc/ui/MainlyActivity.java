@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.app.TabActivity;
 import android.content.Intent;
 import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -30,25 +31,18 @@ import android.widget.TabHost.TabSpec;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.gc.nfc.utils.LocationUtils;
 import com.gc.nfc.utils.AmapLocationService;
-import com.gc.nfc.utils.NetUtil;
-import com.gc.nfc.utils.SharedPreferencesHelper;
+import android.os.PersistableBundle;
 
 import android.view.KeyEvent;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import android.os.Handler;
-import android.app.Notification;
-
-
+import com.gc.nfc.utils.OnePixelReceiver;
+import android.content.IntentFilter;
+import android.app.job.JobScheduler;
+import android.app.job.JobInfo;
+import android.content.ComponentName;
+import android.os.Build;
+import com.gc.nfc.service.MyJobService;
 
 public class MainlyActivity extends TabActivity implements OnClickListener {
 
@@ -69,6 +63,13 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	private LinearLayout linearlayout_myorders;
 	private LinearLayout linearlayout_mine;
 	private LinearLayout linearlayout_more;
+
+	private Intent m_IntentAmapServeice;
+
+	private JobScheduler mJobScheduler;
+
+	//监听屏幕状态的广播
+	private OnePixelReceiver mOnepxReceiver;
 
 	// 用来计算返回键的点击间隔时间
 	private long exitTime = 0;
@@ -102,20 +103,35 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		isOpenGPS();
 		//开启定位
 
+		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
+		startService(m_IntentAmapServeice);
 
-		final Intent intentService = new Intent(this,AmapLocationService.class);
-		startService(intentService);
-		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-		startService(intentServiceWatch);
+		mOnepxReceiver = new OnePixelReceiver();
+		IntentFilter intentFilter2 = new IntentFilter();
+		intentFilter2.addAction("android.intent.action.SCREEN_OFF");
+		intentFilter2.addAction("android.intent.action.SCREEN_ON");
+		intentFilter2.addAction("android.intent.action.USER_PRESENT");
+		registerReceiver(mOnepxReceiver, intentFilter2);
 
+		startJobScheduler();
+
+//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+//		startService(intentServiceWatch);
 
 //		LocationUtils.setInstance(this);
 //		LocationUtils.isOpenGPS();
 //		LocationUtils.getStatusListener();
 //		LocationReceiver.startLocation(this);
 
-	}
+//API大于24
 
+
+
+	}
+	public void onDestroy(){
+		stopService(m_IntentAmapServeice);
+		super.onDestroy();
+	}
 
 	public void initView(){
 		img_validorders=(ImageView) findViewById(R.id.img_vaildorders);
@@ -289,6 +305,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 								public void onClick(DialogInterface dialog,
 													int which)
 								{
+									stopService(m_IntentAmapServeice);
 									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
 								}
 							})
@@ -337,5 +354,34 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		// TODO Auto-generated method stub
 		super.onStart();
 	}
+
+	@RequiresApi(21)
+	public void startJobScheduler() {
+		mJobScheduler = (JobScheduler)
+				getSystemService( Context.JOB_SCHEDULER_SERVICE );
+
+		int id = 55;
+
+		mJobScheduler.cancel(id);
+		JobInfo.Builder builder = new JobInfo.Builder(id, new ComponentName(this, MyJobService.class));
+		if (Build.VERSION.SDK_INT >= 21) {
+			builder.setMinimumLatency(5000); //执行的最小延迟时间
+			//builder.setMinimumLatency(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS); //执行的最小延迟时间
+			builder.setOverrideDeadline(6000);  //执行的最长延时时间
+			builder.setBackoffCriteria(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS, JobInfo.BACKOFF_POLICY_LINEAR);//线性重试方案
+		} else {
+			builder.setPeriodic(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS);
+		}
+		builder.setPersisted(true);  // 设置设备重启时，执行该任务
+		builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+		builder.setRequiresCharging(true); // 当插入充电器，执行该任务
+		PersistableBundle persiBundle = new PersistableBundle();
+		persiBundle.putString("servicename", AmapLocationService.class.getName());
+		builder.setExtras(persiBundle);
+		JobInfo info = builder.build();
+
+		mJobScheduler.schedule(info); //开始定时执行该系统任务
+	}
+
 
 }

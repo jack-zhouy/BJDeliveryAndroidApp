@@ -114,11 +114,11 @@ public class AmapLocationService extends Service {
 	}
 	@Override
 	public void onDestroy() {
-		mWakeLock.release();
+		//mWakeLock.release();
 		//开启远程服务
-		AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
+		//AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
 		//绑定远程服务
-		AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+		//AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 	}
 
 	@Override
@@ -145,20 +145,20 @@ public class AmapLocationService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		m_appContext = (AppContext) getApplicationContext();
-		m_userId = m_appContext.getUser().getUsername();
-//		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-//		Notification.Builder builder = new Notification.Builder(this)
-//				.setContentTitle("百江燃气")
-//				.setContentText("百江配送持续运行中。")
-//				.setContentIntent(pendingIntent)
-//				.setSmallIcon(R.drawable.ic_launcher)
-//				.setWhen(System.currentTimeMillis())
-//				.setOngoing(true);
-//		Notification notification=builder.getNotification();
-//		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-//		startForeground(1,notification);
-//		notifyManager.notify(1, notification);
-		this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+		m_userId = (String)SharedPreferencesHelper.get("username", "default");
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+		Notification.Builder builder = new Notification.Builder(this)
+				.setContentTitle("百江燃气")
+				.setContentText("百江配送持续运行中。")
+				.setContentIntent(pendingIntent)
+				.setSmallIcon(R.drawable.ic_launcher)
+				.setWhen(System.currentTimeMillis())
+				.setOngoing(true);
+		Notification notification=builder.getNotification();
+		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		startForeground(1,notification);
+		notifyManager.notify(1, notification);
+		//this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 		return Service.START_STICKY;
 
 	}
@@ -240,7 +240,10 @@ public class AmapLocationService extends Service {
 
 	public void upDatePosition(double longitude, double latitude, String timestr) {
 		LatLng myLocation = new LatLng(latitude ,longitude);
-		m_appContext.setLocation(myLocation);
+		if(m_appContext!=null){
+			m_appContext.setLocation(myLocation);
+		}
+
 		reportLocation(myLocation);//上报定位数据
 		sysUserKeepAlive();//心跳信息
 
@@ -368,9 +371,9 @@ public class AmapLocationService extends Service {
 		@Override
 		public void onServiceDisconnected(ComponentName name) {
 			//开启远程服务
-			AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
+			//AmapLocationService.this.startService(new Intent(AmapLocationService.this, RomoteService.class));
 			//绑定远程服务
-			AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
+			//AmapLocationService.this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 		}
 	}
 

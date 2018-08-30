@@ -99,9 +99,9 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 				intent.putExtras(bundle);
 				startActivity(intent);
 				break;
-			case R.id.lL_mySetting:// 系统设置
-				Toast.makeText(MineActivity.this, "敬请期待！",
-						Toast.LENGTH_LONG).show();
+			case R.id.lL_mySetting:// 系统版本
+				intent = new Intent(MineActivity.this, AboutActivity.class);
+				startActivity(intent);
 				break;
 			case R.id.lL_myLogout:// 退出登录
 				loginOut();

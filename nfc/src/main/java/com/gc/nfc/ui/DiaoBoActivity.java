@@ -1,14 +1,21 @@
 package com.gc.nfc.ui;
 
 import android.app.AlertDialog;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -26,7 +33,9 @@ import com.gc.nfc.common.NetRequestConstant;
 import com.gc.nfc.common.NetUrlConstant;
 import com.gc.nfc.domain.User;
 import com.gc.nfc.interfaces.Netcallback;
+import com.gc.nfc.service.MyJobService;
 import com.gc.nfc.utils.AmapLocationService;
+import com.gc.nfc.utils.OnePixelReceiver;
 import com.gc.nfc.utils.SharedPreferencesHelper;
 
 import org.apache.http.HttpResponse;
@@ -42,6 +51,7 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 
 	private LinearLayout lL_myBottle;// 我的气瓶
 	private LinearLayout lL_myLogout;//退出登录
+	private LinearLayout lL_myAppVersion;// 系统版本
 
 	private TextView textview_username;
 
@@ -49,6 +59,12 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 
 	private AppContext appContext;
 	private User user;
+	private Intent m_IntentAmapServeice;
+	//监听屏幕状态的广播
+	private OnePixelReceiver mOnepxReceiver;
+
+	private JobScheduler mJobScheduler;
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -80,10 +96,19 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		//开启定位任务
 		isOpenGPS();
 		//开启定位
-		final Intent intentService = new Intent(this,AmapLocationService.class);
-		startService(intentService);
-		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-		startService(intentServiceWatch);
+		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
+		startService(m_IntentAmapServeice);
+		mOnepxReceiver = new OnePixelReceiver();
+		IntentFilter intentFilter2 = new IntentFilter();
+		intentFilter2.addAction("android.intent.action.SCREEN_OFF");
+		intentFilter2.addAction("android.intent.action.SCREEN_ON");
+		intentFilter2.addAction("android.intent.action.USER_PRESENT");
+		registerReceiver(mOnepxReceiver, intentFilter2);
+
+		startJobScheduler();
+
+//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+//		startService(intentServiceWatch);
 	}
 
 	public void onClick(View v) {
@@ -100,6 +125,11 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 			case R.id.lL_myLogout:// 退出登录
 				loginOut();
 				break;
+			case R.id.lL_mySetting:// 系统版本
+				intent = new Intent(DiaoBoActivity.this, AboutActivity.class);
+				startActivity(intent);
+				break;
+
 			case R.id.imageView_userQRcode:// 显示用户二维码
 				showIdentification();
 				break;
@@ -113,6 +143,7 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 	void init() {
 		setContentView(R.layout.activity_diaobo);
 		lL_myBottle = (LinearLayout) findViewById(R.id.lL_myBottle);// 我的气瓶
+		lL_myAppVersion = (LinearLayout) findViewById(R.id.lL_mySetting);// 我的版本
 		lL_myLogout = (LinearLayout) findViewById(R.id.lL_myLogout);//退出登录
 		imageView_userQRcode  = (ImageView) findViewById(R.id.imageView_userQRcode);//二维码用户身份
 
@@ -123,6 +154,7 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 
 		lL_myBottle.setOnClickListener(this);
 		lL_myLogout.setOnClickListener(this);
+		lL_myAppVersion.setOnClickListener(this);
 		imageView_userQRcode.setOnClickListener(this);
 
 
@@ -237,6 +269,7 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 								public void onClick(DialogInterface dialog,
 													int which)
 								{
+									stopService(m_IntentAmapServeice);
 									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
 								}
 							})
@@ -257,5 +290,37 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		{
 			return super.dispatchKeyEvent(event);
 		}
+	}
+
+	public void onDestroy(){
+		stopService(m_IntentAmapServeice);
+		super.onDestroy();
+	}
+
+	@RequiresApi(21)
+	public void startJobScheduler() {
+		mJobScheduler = (JobScheduler)
+				getSystemService( Context.JOB_SCHEDULER_SERVICE );
+
+		int id = 55;
+
+		mJobScheduler.cancel(id);
+		JobInfo.Builder builder = new JobInfo.Builder(id, new ComponentName(this, MyJobService.class));
+		if (Build.VERSION.SDK_INT >= 21) {
+			builder.setMinimumLatency(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS); //执行的最小延迟时间
+			builder.setOverrideDeadline(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS);  //执行的最长延时时间
+			builder.setBackoffCriteria(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS, JobInfo.BACKOFF_POLICY_LINEAR);//线性重试方案
+		} else {
+			builder.setPeriodic(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS);
+		}
+		builder.setPersisted(true);  // 设置设备重启时，执行该任务
+		builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+		builder.setRequiresCharging(true); // 当插入充电器，执行该任务
+		PersistableBundle persiBundle = new PersistableBundle();
+		persiBundle.putString("servicename", AmapLocationService.class.getName());
+		builder.setExtras(persiBundle);
+		JobInfo info = builder.build();
+
+		mJobScheduler.schedule(info); //开始定时执行该系统任务
 	}
 }

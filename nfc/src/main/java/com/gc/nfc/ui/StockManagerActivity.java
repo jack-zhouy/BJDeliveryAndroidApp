@@ -125,6 +125,8 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 
 	private Toast toast = null;
 	TextView tv;//toast--view
+	private Intent m_IntentAmapServeice;
+
 	/*
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
@@ -189,13 +191,13 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		//蓝牙设备初始化
 		blueDeviceInitial();
 
-		//开启定位任务
-		isOpenGPS();
-		//开启定位
-		final Intent intentService = new Intent(this,AmapLocationService.class);
-		startService(intentService);
-		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-		startService(intentServiceWatch);
+//		//开启定位任务
+//		isOpenGPS();
+//		//开启定位
+//		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
+//		startService(m_IntentAmapServeice);
+//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
+//		startService(intentServiceWatch);
 
 	}
 

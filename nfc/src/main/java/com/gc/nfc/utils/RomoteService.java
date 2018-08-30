@@ -38,7 +38,7 @@ public class RomoteService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        this.bindService(new Intent(this, AmapLocationService.class), conn, Context.BIND_IMPORTANT);
+        //this.bindService(new Intent(this, AmapLocationService.class), conn, Context.BIND_IMPORTANT);
         return START_STICKY;
     }
 
@@ -61,9 +61,9 @@ public class RomoteService extends Service {
 
 
             //开启本地服务
-            RomoteService.this.startService(new Intent(RomoteService.this, AmapLocationService.class));
+            //RomoteService.this.startService(new Intent(RomoteService.this, AmapLocationService.class));
             //绑定本地服务
-            RomoteService.this.bindService(new Intent(RomoteService.this, AmapLocationService.class), conn, Context.BIND_IMPORTANT);
+            //RomoteService.this.bindService(new Intent(RomoteService.this, AmapLocationService.class), conn, Context.BIND_IMPORTANT);
         }
 
     }
@@ -72,9 +72,9 @@ public class RomoteService extends Service {
     public void onDestroy() {
         super.onDestroy();
         //开启本地服务
-        RomoteService.this.startService(new Intent(RomoteService.this, AmapLocationService.class));
+       // RomoteService.this.startService(new Intent(RomoteService.this, AmapLocationService.class));
         //绑定本地服务
-        RomoteService.this.bindService(new Intent(RomoteService.this, AmapLocationService.class), conn, Context.BIND_IMPORTANT);
+        //RomoteService.this.bindService(new Intent(RomoteService.this, AmapLocationService.class), conn, Context.BIND_IMPORTANT);
 
     }
 }
