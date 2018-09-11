@@ -96,8 +96,8 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		//开启定位任务
 		isOpenGPS();
 		//开启定位
-		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
-		startService(m_IntentAmapServeice);
+//		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
+//		startService(m_IntentAmapServeice);
 		mOnepxReceiver = new OnePixelReceiver();
 		IntentFilter intentFilter2 = new IntentFilter();
 		intentFilter2.addAction("android.intent.action.SCREEN_OFF");
@@ -105,7 +105,7 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		intentFilter2.addAction("android.intent.action.USER_PRESENT");
 		registerReceiver(mOnepxReceiver, intentFilter2);
 
-		startJobScheduler();
+		startJobScheduler(user.getUsername());
 
 //		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
 //		startService(intentServiceWatch);
@@ -297,8 +297,10 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		super.onDestroy();
 	}
 
+
+
 	@RequiresApi(21)
-	public void startJobScheduler() {
+	public void startJobScheduler(String userId) {
 		mJobScheduler = (JobScheduler)
 				getSystemService( Context.JOB_SCHEDULER_SERVICE );
 
@@ -307,8 +309,9 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		mJobScheduler.cancel(id);
 		JobInfo.Builder builder = new JobInfo.Builder(id, new ComponentName(this, MyJobService.class));
 		if (Build.VERSION.SDK_INT >= 21) {
-			builder.setMinimumLatency(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS); //执行的最小延迟时间
-			builder.setOverrideDeadline(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS);  //执行的最长延时时间
+			builder.setMinimumLatency(5000); //执行的最小延迟时间
+			//builder.setMinimumLatency(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS); //执行的最小延迟时间
+			builder.setOverrideDeadline(6000);  //执行的最长延时时间
 			builder.setBackoffCriteria(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS, JobInfo.BACKOFF_POLICY_LINEAR);//线性重试方案
 		} else {
 			builder.setPeriodic(JobInfo.DEFAULT_INITIAL_BACKOFF_MILLIS);
@@ -318,6 +321,7 @@ public class DiaoBoActivity extends BaseActivity implements OnClickListener {
 		builder.setRequiresCharging(true); // 当插入充电器，执行该任务
 		PersistableBundle persiBundle = new PersistableBundle();
 		persiBundle.putString("servicename", AmapLocationService.class.getName());
+		persiBundle.putString("userId", userId);
 		builder.setExtras(persiBundle);
 		JobInfo info = builder.build();
 

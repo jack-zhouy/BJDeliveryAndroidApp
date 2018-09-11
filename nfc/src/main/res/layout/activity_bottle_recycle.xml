@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/backgroundcolor"
+    android:orientation="vertical" >
+    <!--<android.support.v4.widget.SwipeRefreshLayout-->
+    <!--android:id="@+id/main_srl"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content">-->
+    <ScrollView
+        android:layout_above="@+id/llybuttom"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fadingEdge="none">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@color/colorPrimary"
+                android:orientation="horizontal" >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:layout_weight="1"
+                    android:text="空瓶回收"
+                    android:textColor="@color/white"
+                    android:textSize="20sp" />
+                <EditText
+                    android:id="@+id/msgText"
+                    android:editable="false"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="3"
+                    android:text=""
+                    android:textColor="@color/white"
+                    android:textSize="15sp" />
+                <ImageView
+                    android:id="@+id/imageView_search"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginTop="10dp"
+                    android:src="@drawable/abs__menu_dropdown_panel_holo_light" />
+            </LinearLayout>
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="5dp"
+                android:background="@color/textgray" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="visible">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="visible">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginTop="10dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:text="客户名下钢瓶"
+                            android:textSize="20sp"
+                            android:textColor="@color/black"/>
+                        <ImageView
+                            android:id="@+id/imageView_KPEYE"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:layout_alignParentRight="true"
+                            android:layout_marginRight="10dp"
+                            android:layout_marginTop="10dp"
+                            android:src="@drawable/icon_setting" />
+
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/RelativeLayout_san"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:id="@+id/textView_userInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="#00000000"
+                            android:hint="用户卡扫描识别客户"
+                            android:layout_marginTop="10dp"
+                            android:textSize="16sp" />
+                        <ImageView
+                            android:id="@+id/imageView_Scan"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:layout_alignParentRight="true"
+                            android:layout_marginRight="10dp"
+                            android:layout_marginTop="10dp"
+                            android:src="@drawable/icon_camera" />
+
+                    </RelativeLayout>
+                </LinearLayout>
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginTop="5dp"
+                    android:background="@color/textgray" />
+
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="10dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:text="回收区"
+                        android:textSize="20sp"
+                        android:textColor="@color/black"/>
+
+            </RelativeLayout>
+
+
+                <ListView
+                    android:id="@+id/listview_kp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+
+            </LinearLayout>
+            <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:descendantFocusability="blocksDescendants"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginTop="10dp"
+                    android:text="合计"
+                    android:textColor="@color/popup_main_background" />
+                <TextView
+                    android:id="@+id/items_totalCountKP"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:layout_alignParentRight="true"
+                    android:textColor="@color/colorAccent"
+                    android:textSize="20dp"
+                    android:text=""/>
+            </RelativeLayout>
+
+        </LinearLayout>
+    </ScrollView>
+    <!--</android.support.v4.widget.SwipeRefreshLayout>-->
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:id="@+id/llybuttom"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_marginBottom="5dp"
+        android:layout_alignParentBottom="true"
+       >
+        <Button
+            android:id="@+id/button_next"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
+            android:layout_marginRight="15dp"
+            android:layout_marginTop="0dp"
+            android:background="@drawable/button_select"
+            android:padding="10dp"
+            android:text="完成"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+    </LinearLayout>
+</RelativeLayout>

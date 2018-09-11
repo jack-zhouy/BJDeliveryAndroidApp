@@ -7,7 +7,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 
-import com.gc.nfc.MainActivity;
 import com.gc.nfc.R;
 import android.view.WindowManager;
 import android.view.Window;

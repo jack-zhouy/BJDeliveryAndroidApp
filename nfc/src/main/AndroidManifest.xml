@@ -40,7 +40,33 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
+    <!--阿里移动推送相关权限-->
+    <!--Android 6.0版本可去除，用于选举信息（通道复用）的同步-->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!--进行网络访问和网络状态监控相关的权限声明-->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!--允许对sd卡进行读写操作-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!--网络库使用，当网络操作时需要确保事务完成不被杀掉-->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!--用于读取手机硬件信息等，用于机型过滤-->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!--选举使用，当应用有删除或者更新时需要重新选举，复用推送通道-->
+    <uses-permission android:name="android.permission.BROADCAST_PACKAGE_CHANGED" />
+    <uses-permission android:name="android.permission.BROADCAST_PACKAGE_REPLACED" />
+    <uses-permission android:name="android.permission.RESTART_PACKAGES" />
+    <!--补偿通道小米PUSH使用，不用可去除-->
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <!--补偿通道GCM使用，不使用可去除-->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <!--允许监听启动完成事件-->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!--允许访问震动器-->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 允许task重排序 -->
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
 
 
 
@@ -58,8 +84,46 @@
         <meta-data
             android:name="com.amap.api.v2.apikey"
             android:value="23533620dd15c0f3f59b3231fd6f7303"/>
-        <service android:name="com.amap.api.location.APSService">
+        <meta-data
+            android:name="com.alibaba.app.appkey"
+            android:value="25056652" /> <!-- 请填写你自己的- appKey -->
+        <meta-data
+            android:name="com.alibaba.app.appsecret"
+            android:value="32c2c2b8df34b12e1cceef779ba8ee47" /> <!-- 请填写你自己的appSecret -->
+
+
+        <!-- 消息接收监听器 （用户可自主扩展） -->
+        <receiver
+            android:name=".component.MyMessageReceiver"
+            android:exported="false">
+            <intent-filter> 
+                <action android:name="com.alibaba.push2.action.NOTIFICATION_OPENED" />
+            </intent-filter>
+            <intent-filter>     
+                <action android:name="com.alibaba.push2.action.NOTIFICATION_REMOVED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.alibaba.sdk.android.push.RECEIVE" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".component.MyMessageIntentService"
+            android:exported="false">
+            <intent-filter> 
+                <action android:name="com.alibaba.push2.action.NOTIFICATION_OPENED" />
+            </intent-filter>
+            <intent-filter>     
+                <action android:name="com.alibaba.push2.action.NOTIFICATION_REMOVED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.alibaba.sdk.android.push.RECEIVE" />
+            </intent-filter>
         </service>
+
+
+        <service android:name="com.amap.api.location.APSService" />
+
 
         <service android:name="com.dk.bleNfc.BleNfcDeviceService" />
         <!-- 定位需要的服务 -->
@@ -67,11 +131,7 @@
             android:enabled="true"
             android:exported="true">
         </service>
-        <service
-            android:name=".utils.RomoteService"
-            android:process=":romoteservice"
-            android:enabled="true"
-            android:exported="true"></service>
+
         <service
             android:name=".service.MyJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"></service>
@@ -150,6 +210,11 @@
             android:launchMode="singleTop"
             android:label="调拨员操作页面"/>
 
+        <activity android:name=".ui.BottleRecycleActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="空瓶回收"/>
+
         <!-- 1像素的activity用来给进程保活 -->
         <activity
             android:name=".ui.OnePiexlActivity"
@@ -164,9 +229,6 @@
 
 
 
-        <activity android:name=".MainActivity"
-            android:launchMode="singleTop"
-            android:label="@string/str_entry"/>
         <activity android:name=".ui.RunAppActivity"
             android:launchMode="singleTop"
             android:label="@string/str_run_app"/>

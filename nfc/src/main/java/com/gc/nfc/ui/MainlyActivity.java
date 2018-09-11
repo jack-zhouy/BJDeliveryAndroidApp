@@ -9,11 +9,15 @@ import com.gc.nfc.domain.User;
 import com.gc.nfc.interfaces.Netcallback;
 import com.gc.nfc.receiver.LocationReceiver;
 
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -21,6 +25,8 @@ import android.app.TabActivity;
 import android.content.Intent;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -43,9 +49,26 @@ import android.app.job.JobInfo;
 import android.content.ComponentName;
 import android.os.Build;
 import com.gc.nfc.service.MyJobService;
+import com.gc.nfc.utils.SharedPreferencesHelper;
+import com.alibaba.sdk.android.push.CloudPushService;
+import com.alibaba.sdk.android.push.CommonCallback;
+import com.alibaba.sdk.android.push.noonesdk.PushServiceFactory;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.graphics.Color;
+import android.os.Build;
+import android.util.Log;
+
+import com.alibaba.sdk.android.push.CloudPushService;
+import com.alibaba.sdk.android.push.CommonCallback;
+import com.alibaba.sdk.android.push.noonesdk.PushServiceFactory;
+import com.alibaba.sdk.android.push.register.GcmRegister;
+import com.alibaba.sdk.android.push.register.HuaWeiRegister;
+import com.alibaba.sdk.android.push.register.MiPushRegister;
 
 public class MainlyActivity extends TabActivity implements OnClickListener {
-
+	private final static String PROCESS_NAME = "com.gc.nfc";
 	private TabHost host;
 	private final static String VALIDORDERS_STRING = "VALIDORDERS_STRING";//待抢订单
 	private final static String MYORDERS_STRING = "MYORDERS_STRING";//我的订单
@@ -67,6 +90,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	private Intent m_IntentAmapServeice;
 
 	private JobScheduler mJobScheduler;
+	private String m_userId;
 
 	//监听屏幕状态的广播
 	private OnePixelReceiver mOnepxReceiver;
@@ -74,12 +98,22 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	// 用来计算返回键的点击间隔时间
 	private long exitTime = 0;
 
+	private CloudPushService mPushService;//推送服务
+
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_mainly);
 		this.getScreenDisplay();
 
+
+
+
+//		//判断是不是主进程
+//		if(!isAppMainProcess()){
+//			Toast.makeText(getApplicationContext(), "ooooooooooooooo",
+//					Toast.LENGTH_SHORT).show();
+//		}
 		this.initView();
 		host = getTabHost();
 		host.setup();
@@ -99,12 +133,16 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 				host.setCurrentTabByTag(MYSELF_STRING);//默认我的界面
 			}
 		}
+
+		m_userId= (String) SharedPreferencesHelper.get("username", "default");
+
+
 		//开启定位任务
 		isOpenGPS();
-		//开启定位
 
-		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
-		startService(m_IntentAmapServeice);
+
+//		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
+//		startService(m_IntentAmapServeice);
 
 		mOnepxReceiver = new OnePixelReceiver();
 		IntentFilter intentFilter2 = new IntentFilter();
@@ -113,7 +151,9 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		intentFilter2.addAction("android.intent.action.USER_PRESENT");
 		registerReceiver(mOnepxReceiver, intentFilter2);
 
-		startJobScheduler();
+		startJobScheduler(m_userId);
+
+		initialCloudPushService();//初始化推送服务
 
 //		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
 //		startService(intentServiceWatch);
@@ -129,7 +169,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 
 	}
 	public void onDestroy(){
-		stopService(m_IntentAmapServeice);
+		//stopService(m_IntentAmapServeice);
 		super.onDestroy();
 	}
 
@@ -356,7 +396,7 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	}
 
 	@RequiresApi(21)
-	public void startJobScheduler() {
+	public void startJobScheduler(String userId) {
 		mJobScheduler = (JobScheduler)
 				getSystemService( Context.JOB_SCHEDULER_SERVICE );
 
@@ -377,11 +417,153 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 		builder.setRequiresCharging(true); // 当插入充电器，执行该任务
 		PersistableBundle persiBundle = new PersistableBundle();
 		persiBundle.putString("servicename", AmapLocationService.class.getName());
+		persiBundle.putString("userId", userId);
 		builder.setExtras(persiBundle);
 		JobInfo info = builder.build();
 
 		mJobScheduler.schedule(info); //开始定时执行该系统任务
 	}
+	/**
+	 * 判断是不是UI主进程，因为有些东西只能在UI主进程初始化
+	 */
+	public  boolean isAppMainProcess() {
+		try {
+			int pid = android.os.Process.myPid();
+			String process = getAppNameByPID(getApplicationContext(), pid);
+			if (TextUtils.isEmpty(process)) {
+				//第一次创建,系统中还不存在该process,所以一定是主进程
+				return true;
+			} else if (PROCESS_NAME.equalsIgnoreCase(process)) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return true;
+		}
+	}
+
+	/**
+	 * 根据Pid得到进程名
+	 */
+	public  String getAppNameByPID(Context context, int pid) {
+		ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+		for (android.app.ActivityManager.RunningAppProcessInfo processInfo : manager.getRunningAppProcesses()) {
+			if (processInfo.pid == pid) {
+				//主进程的pid是否和当前的pid相同,若相同,则对应的包名就是app的包名
+				return processInfo.processName;
+			}
+		}
+		return "";
+	}
+
+
+	/**
+	 * 打开推送通道接口:CloudPushService.turnOnPushChannel调用示例
+	 * 1. 推送通道默认是打开的,如果没有调用turnOffPushChannel接口关闭推送通道,无法调用该接口
+	 */
+	private void turnOnPush() {
+		mPushService.turnOnPushChannel(new CommonCallback() {
+			@Override
+			public void onSuccess(String s) {
+				System.out.print("打开推送通道：ok");
+			}
+
+			@Override
+			public void onFailed(String errorCode, String errorMsg) {
+				System.out.print("打开推送通道：failed");
+			}
+		});
+	}
+
+	/**关闭推送通道接口:CloudPushService.turnOffPushChannel调用示例
+	 * 1. 调用该接口后,移动推送服务端将不再向该设备推送消息
+	 * 2. 关闭推送通道,必须通过调用turnOnPushChannel才能让服务端重新向该设备推送消息
+	 */
+	private void turnOffPush() {
+		mPushService.turnOffPushChannel(new CommonCallback() {
+			@Override
+			public void onSuccess(String s) {
+
+			}
+
+			@Override
+			public void onFailed(String errorCode, String errorMsg) {
+
+			}
+		});
+	}
+	/**
+	 * 添加别名接口:CloudPushService.addAlias调用示例
+	 * 1. 调用接口后,可以通过别名进行推送
+	 */
+	private void addAlias(String aliasName) {
+		mPushService.addAlias(aliasName, new CommonCallback() {
+			@Override
+			public void onSuccess(String s) {
+				System.out.print("添加别名：ok");
+			}
+			@Override
+			public void onFailed(String errorCode, String errorMsg) {
+				System.out.print("添加别名：failed");
+			}
+		});
+	}
+
+
+	private void initialCloudPushService() {
+		mPushService = PushServiceFactory.getCloudPushService();
+		turnOnPush();//打开推送通道
+		addAlias(m_userId);
+		setCusNotifSound();
+	}
+
+
+
+	/**
+	 * 指定通知声音文件示例
+	 * 1. 此处指定资源Id为R.raw.alicloud_notification_sound_assgin的声音文件
+	 */
+	private void setCusNotifSound() {
+		final String DEFAULT_RES_PATH_FREFIX = "android.resource://";
+		final String DEFAULT_RES_SOUND_TYPE = "raw";
+		final String ASSIGN_NOTIFCE_SOUND = "new_order_notify";
+		final String SETTING_NOTICE = "setting_notification";
+		int assignSoundId = getResources().getIdentifier(ASSIGN_NOTIFCE_SOUND, DEFAULT_RES_SOUND_TYPE, getPackageName());
+		if (assignSoundId != 0) {
+			String defaultSoundPath = DEFAULT_RES_PATH_FREFIX + getPackageName() + "/" + assignSoundId;
+			mPushService.setNotificationSoundFilePath(defaultSoundPath);
+			Log.i(SETTING_NOTICE, "Set notification sound res id to R." + DEFAULT_RES_SOUND_TYPE + "." + ASSIGN_NOTIFCE_SOUND);
+
+		} else {
+			Log.e(SETTING_NOTICE, "Set notification sound path error, R."
+					+ DEFAULT_RES_SOUND_TYPE + "." + ASSIGN_NOTIFCE_SOUND + " not found.");
+
+		}
+	}
+
+//	/**
+//	 * 设置默认通知图标方法示例
+//	 * 1. 如果用户未调用过setNotificationLargeIcon()接口，默认取R.raw.alicloud_notification_largeicon图标资源
+//	 * 则无需使用以下方式进行设置
+//	 */
+//	private void setDefNotifIcon() {
+//		final String DEFAULT_NOTICE_LARGE_ICON = "alicloud_notification_largeicon";
+//		final String ASSIGN_NOTIFCE_LARGE_ICON = "alicloud_notification_largeicon_assign";
+//		int defaultLargeIconId = getResources().getIdentifier(DEFAULT_NOTICE_LARGE_ICON, DEFAULT_RES_ICON_TYPE, PackageName);
+//		if (defaultLargeIconId != 0) {
+//			Drawable drawable = getApplicationContext().getResources().getDrawable(defaultLargeIconId);
+//			if (drawable != null) {
+//				Bitmap bitmap = ((BitmapDrawable)drawable).getBitmap();
+//				mPushService.setNotificationLargeIcon(bitmap);
+//			}
+//		} else {
+//
+//		}
+//
+//	}
+
 
 
 }

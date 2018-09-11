@@ -584,7 +584,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 							music.start();
 							if(isKP){
 								addKP(bottleCode);
-								bottlesStatusZPtoKP(bottleCode);  //将重瓶状态转换为空瓶
 							}else {
 								addZP(bottleCode);
 							}
@@ -670,35 +669,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	};
 
 
-	//单个钢瓶状态由重瓶转为空瓶
-	public void bottlesStatusZPtoKP(String bottleCode) {
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.PUT);
-		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL+"/"+bottleCode;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		Map<String, Object> body = new HashMap<String, Object>();
-		body.put("loadStatus","LSEmpty");//空瓶
-		nrc.setParams(params);
-		nrc.setBody(body);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-						}
-					}else {
-						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
-								Toast.LENGTH_LONG).show();
-					}
-				} else {
-					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-				}
-			}
-		}, nrc);
-	}
 
 	private void addKP(final String bottleCode){
 

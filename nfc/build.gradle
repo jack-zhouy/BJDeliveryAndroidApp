@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion '26.0.2'
+    compileSdkVersion 26
+    buildToolsVersion '26.0.1'
     useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "com.gc.nfc"
-        minSdkVersion 15
-        targetSdkVersion 24
+        minSdkVersion 14
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -26,10 +26,17 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     compile 'com.android.support:appcompat-v7:24+'
+    compile 'com.android.support:support-v4:26.0.1'
+    compile 'com.j256.ormlite:ormlite-core:4.48'
+    compile 'com.j256.ormlite:ormlite-android:4.48'
     testCompile 'junit:junit:4.12'
     compile 'com.google.zxing:core:3.2.1'
     compile 'com.journeyapps:zxing-android-embedded:3.3.0'
 
     compile 'com.jakewharton:butterknife:8.5.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.5.1'
+    compile ('com.aliyun.ams:alicloud-android-push:3.1.3@aar') {
+        transitive true
+    }
+    compile 'com.aliyun.ams:alicloud-android-third-push:3.0.3@aar'
 }

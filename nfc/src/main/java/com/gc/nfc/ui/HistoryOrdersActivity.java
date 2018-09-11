@@ -132,6 +132,8 @@ public class HistoryOrdersActivity extends BaseActivity implements OnClickListen
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("dispatcherId",user.getUsername() );//待派送
         params.put("orderBy","id desc" );//按照时间逆序排列
+        params.put("pageNo","1" );//按照时间逆序排列
+        params.put("pageSize","10" );//按照时间逆序排列
         nrc.setParams(params);
         getServer(new Netcallback() {
             public void preccess(Object res, boolean flag) {

@@ -40,12 +40,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-
+import android.app.ActivityManager;
+import android.text.TextUtils;
+import android.content.Context;
 public class MineActivity extends BaseActivity implements OnClickListener {
+
 
 	private LinearLayout lL_myBottle;// 我的气瓶
 	private LinearLayout lL_myHistoryOrders;//历史订单
 	private LinearLayout lL_mySetting;//设置
+	private LinearLayout lL_bottleRecycle;//空瓶回收
 	private LinearLayout lL_myLogout;//退出登录
 
 	private TextView textview_username;
@@ -109,6 +113,11 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 			case R.id.imageView_userQRcode:// 显示用户二维码
 				showIdentification();
 				break;
+			case R.id.lL_recycle:// 空瓶回收
+				intent = new Intent(MineActivity.this, BottleRecycleActivity.class);
+				startActivity(intent);
+				break;
+
 			default:
 				break;
 		}
@@ -123,7 +132,7 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		lL_mySetting = (LinearLayout) findViewById(R.id.lL_mySetting);//历史订单
 		lL_myLogout = (LinearLayout) findViewById(R.id.lL_myLogout);//退出登录
 		imageView_userQRcode  = (ImageView) findViewById(R.id.imageView_userQRcode);//二维码用户身份
-
+		lL_bottleRecycle = (LinearLayout) findViewById(R.id.lL_recycle);//空瓶回收
 
 
 		textview_username = (TextView) findViewById(R.id.textview_username);
@@ -133,6 +142,7 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		lL_myHistoryOrders.setOnClickListener(this);
 		lL_mySetting.setOnClickListener(this);
 		lL_myLogout.setOnClickListener(this);
+		lL_bottleRecycle.setOnClickListener(this);
 		imageView_userQRcode.setOnClickListener(this);
 
 
@@ -214,6 +224,9 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		catch (IOException e){
 		}
 	}
+
+
+
 
 
 }

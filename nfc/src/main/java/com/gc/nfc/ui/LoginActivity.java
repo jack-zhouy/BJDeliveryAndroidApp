@@ -10,7 +10,6 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.gc.nfc.MainActivity;
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
 import com.gc.nfc.common.NetUrlConstant;

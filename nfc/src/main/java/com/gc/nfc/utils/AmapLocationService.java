@@ -124,6 +124,10 @@ public class AmapLocationService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+
+
+
+
 		binder = new MyBinder();
 		conn = new MyConn();
 
@@ -144,20 +148,22 @@ public class AmapLocationService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		Bundle bundle = new Bundle();
+		bundle = intent.getExtras();
+		m_userId = bundle.getString("userId");
 		m_appContext = (AppContext) getApplicationContext();
-		m_userId = (String)SharedPreferencesHelper.get("username", "default");
-		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-		Notification.Builder builder = new Notification.Builder(this)
-				.setContentTitle("百江燃气")
-				.setContentText("百江配送持续运行中。")
-				.setContentIntent(pendingIntent)
-				.setSmallIcon(R.drawable.ic_launcher)
-				.setWhen(System.currentTimeMillis())
-				.setOngoing(true);
-		Notification notification=builder.getNotification();
-		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		startForeground(1,notification);
-		notifyManager.notify(1, notification);
+//		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+//		Notification.Builder builder = new Notification.Builder(this)
+//				.setContentTitle("百江燃气")
+//				.setContentText("百江配送持续运行中。")
+//				.setContentIntent(pendingIntent)
+//				.setSmallIcon(R.drawable.ic_launcher)
+//				.setWhen(System.currentTimeMillis())
+//				.setOngoing(true);
+//		Notification notification=builder.getNotification();
+//		NotificationManager notifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//		startForeground(1,notification);
+//		notifyManager.notify(1, notification);
 		//this.bindService(new Intent(AmapLocationService.this, RomoteService.class), conn, Context.BIND_IMPORTANT);
 		return Service.START_STICKY;
 

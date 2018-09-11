@@ -5,37 +5,38 @@ import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnDismissListener;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.location.LocationManager;
 import android.media.MediaPlayer;
-import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.Parcelable;
-import android.provider.Settings;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.view.KeyEvent;
+import android.util.DisplayMetrics;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
+import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -69,22 +70,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.gc.nfc.utils.AmapLocationService;
-import com.gc.nfc.utils.SharedPreferencesHelper;
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
-import android.view.Gravity;
-import android.view.WindowManager;
-import android.widget.LinearLayout;
-import android.util.DisplayMetrics;
-public class StockManagerActivity extends BaseActivity implements OnClickListener  {
+
+public class BottleRecycleActivity extends BaseActivity implements OnClickListener  {
 	BleNfcDeviceService mBleNfcDeviceService;
 	private BleNfcDevice bleNfcDevice;
 	private Scanner mScanner;
@@ -97,37 +92,30 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 	private Lock mNearestBleLock = new ReentrantLock();// 锁对象
 	private int lastRssi = -100;
 	//=========================
-	private TextView m_textViewTotalCountZP;// 重瓶数量
+
+
+
+	private RelativeLayout m_relativeLayout_san;//用户卡扫码窗口
+	private TextView m_textViewUserInfo;// 客户信息
+	private TextView m_textViewTotalCountKP;// 空瓶数量
 	private Button m_buttonNext;//下一步
-	private ListView m_listView_zp;// 重瓶号列表
-	private  RadioGroup  radioGroup_nfc=null;
-	private  RadioButton  radioButton_kp,radioButton_zp;//nfc空瓶/重瓶录入
-	private SwipeRefreshLayout swipeRefreshLayout;
+	private ListView m_listView_kp;// 空瓶号列表
+	private ImageView m_imageViewKPEye; //有效空瓶查看
+	private ImageView m_imageViewSanUserCard; //用户卡扫码窗口
 	private AppContext appContext;
+	private User m_deliveryUser;//配送工
 
+	private Map<String, String> m_BottlesMapKP;//空瓶表
 
-	private User m_curLoginUserId;
+	private boolean m_orderServiceQualityShowFlag;//是否是用户评价阶段
 
-
-	private List<String> m_BottlesListZP;//瓶表
-
-	private int m_selected_nfc_model;//0--入库 1--出库
-
-	Bundle m_bundle;//上个activity传过来的参数
-
-	private EditText  m_bottleIdZPEditText;//手动输入空重瓶号
-	private ImageView m_imageAddZPManual; //手动输入重瓶号
-	private TextView m_editTextTakeOverUserId;//交接人
-	private ImageView m_imageViewScan; //扫码识别用户
-	private TextView m_textView_Department; //责任部门
-	private String m_takerOverUserId;//出库为dest人员·入库为src人员
-	private String m_takeOverGroupCode;//交接人角色信息
+	AlertDialog m_dialog;//用户卡弹窗
+	private String m_curUserId = null;
+	private String m_curUserInfo = null;
 
 	private Toast toast = null;
 	TextView tv;//toast--view
-	private Intent m_IntentAmapServeice;
-
-	/*
+	/**
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
 
@@ -139,83 +127,43 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 	@Override
 	void init() {
 
-		setContentView(R.layout.activity_stock_manage);
+		setContentView(R.layout.activity_bottle_recycle);
 
 		//控件初始化
 		m_buttonNext = (Button) findViewById(R.id.button_next);//下一步按钮
-		m_listView_zp = (ListView) findViewById(R.id.listview_zp);
-		radioGroup_nfc=(RadioGroup)findViewById(R.id.radioGroup_nfc_id);
-		radioButton_kp=(RadioButton)findViewById(R.id.radioButton_kp_id);
-		radioButton_zp=(RadioButton)findViewById(R.id.radioButton_zp_id);
+		m_listView_kp = (ListView) findViewById(R.id.listview_kp);
+		m_imageViewKPEye = (ImageView) findViewById(R.id.imageView_KPEYE);
+		m_imageViewSanUserCard = (ImageView) findViewById(R.id.imageView_Scan);
+		m_textViewTotalCountKP = (TextView) findViewById(R.id.items_totalCountKP);
+		m_textViewUserInfo = (TextView) findViewById(R.id.textView_userInfo);
+		m_relativeLayout_san = (RelativeLayout) findViewById(R.id.RelativeLayout_san);
 
-		m_bottleIdZPEditText = (EditText) findViewById(R.id.input_bottleIdZP);
-		m_imageAddZPManual = (ImageView) findViewById(R.id.imageView_addZPManual);
-		m_imageViewScan = (ImageView) findViewById(R.id.imageView_Scan);
-		m_textViewTotalCountZP =(TextView) findViewById(R.id.items_totalCountZP);
-		m_imageAddZPManual.setOnClickListener(this);
-		m_imageViewScan.setOnClickListener(this);
-
+		m_imageViewKPEye.setOnClickListener(this);
 		m_buttonNext.setOnClickListener(this);
-		radioGroup_nfc.setOnCheckedChangeListener(listen);
-		radioGroup_nfc.check(radioButton_kp.getId());//默认是空瓶
+		m_imageViewSanUserCard.setOnClickListener(this);
+		m_relativeLayout_san.setOnClickListener(this);
 
 		//数据结构初始化
-		m_BottlesListZP = new ArrayList<String>();
 
-		m_imageViewScan = (ImageView) findViewById(R.id.imageView_Scan);
-		m_editTextTakeOverUserId = (TextView) findViewById(R.id.input_TakeOverUserId);
-		m_textView_Department = (TextView) findViewById(R.id.textView_Department);
+		m_BottlesMapKP = new HashMap<String,String>();
 
-		//获取当前
+
+
+		//获取当前配送工
 		appContext = (AppContext) getApplicationContext();
-		m_curLoginUserId = appContext.getUser();
-		if (m_curLoginUserId == null) {
-			Toast.makeText(StockManagerActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
-			Intent intent = new Intent(StockManagerActivity.this, LoginActivity.class);
+		m_deliveryUser = appContext.getUser();
+		if (m_deliveryUser == null) {
+			Toast.makeText(BottleRecycleActivity.this, "登陆会话失效", Toast.LENGTH_LONG).show();
+			Intent intent = new Intent(BottleRecycleActivity.this, LoginActivity.class);
 			startActivity(intent);
 			finish();
 		}
-
-		//初始化两个LISTVIEW的点击事件，目前没有实现交接的回撤
-		m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-				return true;
-			}
-		});
-		m_takerOverUserId = null;
-		//获取责任部门
-		String username = m_curLoginUserId.getUsername();
-		m_textView_Department.setText(username+"("+m_curLoginUserId.getGroupName()+"|"+m_curLoginUserId.getDepartmentName()+")");
-
 		//蓝牙设备初始化
 		blueDeviceInitial();
-
-//		//开启定位任务
-//		isOpenGPS();
-//		//开启定位
-//		m_IntentAmapServeice = new Intent(this,AmapLocationService.class);
-//		startService(m_IntentAmapServeice);
-//		final Intent intentServiceWatch = new Intent(this,com.gc.nfc.utils.RomoteService.class);
-//		startService(intentServiceWatch);
-
+		//默认刚开始是录钢瓶阶段
+		m_orderServiceQualityShowFlag = false;
 	}
 
-	private OnCheckedChangeListener  listen=new OnCheckedChangeListener() {
-		@Override
-		public void onCheckedChanged(RadioGroup group, int checkedId) {
-			int id= group.getCheckedRadioButtonId();
-			switch (group.getCheckedRadioButtonId()) {
-				case R.id.radioButton_kp_id:
-					m_selected_nfc_model = 0;
-					break;
-				case R.id.radioButton_zp_id:
-					m_selected_nfc_model = 1;
-					break;
-				default:
-					break;
-			}
-		}};
 
 	//动态设置ListView的高度
 	private void setListViewHeightBasedOnChildren(ListView listView) {
@@ -238,202 +186,75 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 	}
 
 
+
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
-				cleanAll();
+				finish();
 				break;
-			case R.id.imageView_addZPManual://手动添加钢瓶号
-				//后面讨论如何处理第一次入库
-				if(m_takerOverUserId == null){
-					showToast("请扫码获取交接人信息！");
+			case R.id.imageView_KPEYE:// 用户的气瓶
+				if(m_curUserId==null){
+					showToast("请扫描用户卡！");
 					return;
 				}
-				String bottleCode = m_bottleIdZPEditText.getText().toString();
-				String bottleStatus = new String();
-				if(m_selected_nfc_model==0){//ruku
-					if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
-						bottleStatus = "2";//门店库存
-					}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
-						bottleStatus = "1";//充气站库存
-					}else{
-						Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
-						return;
-					}
-					bottleTakeOverUnit(bottleCode, m_takerOverUserId, m_curLoginUserId.getUsername(), bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶入库", false, true);//钢瓶入库
-				}else if(m_selected_nfc_model==1){//chuku
-					if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
-						if(m_takeOverGroupCode.equals("00007")){//配送车
-							bottleStatus = "3";//在途运输
-						}else if(m_takeOverGroupCode.equals("00003")){//配送工
-							bottleStatus = "4";//在途派送
-						}else {
-							Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
-							return;
-						}
-					}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
-						bottleStatus = "3";//在途运输
-					}else{
-						Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
-						return;
-					}
-					bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, false);//钢瓶出库
-				}
-
+				Intent intentKP = new Intent();
+				Bundle bundleKP = new Bundle();
+				bundleKP.putString("userId", m_curUserId);
+				intentKP.setClass(BottleRecycleActivity.this, MybottlesActivity.class);
+				intentKP.putExtras(bundleKP);
+				startActivity(intentKP);
 				break;
-			case R.id.imageView_Scan://扫描用户二维码
-				startScan();
+			case R.id.imageView_Scan:// 扫用户卡弹窗
+			case  R.id.RelativeLayout_san:
+				orderServiceQualityShow();
 				break;
 			default:
 				break;
 		}
 
 	}
-	private void startScan() {
-		new IntentIntegrator(this)
-				.setOrientationLocked(false)
-				.setCaptureActivity(CustomScanActivity.class) // 设置自定义的activity是CustomActivity
-				.initiateScan(); // 初始化扫描
-	}
-
-	@Override
-// 通过 onActivityResult的方法获取 扫描回来的 值
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		IntentResult intentResult = IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
-		if(intentResult != null) {
-			if(intentResult.getContents() == null) {
-				Toast.makeText(this,"内容为空",Toast.LENGTH_LONG).show();
-			} else {
-				//Toast.makeText(this,"扫描成功",Toast.LENGTH_LONG).show();
-				// ScanResult 为 获取到的字符串
-				String takerOverUserId = intentResult.getContents();
-
-				//查询交接人信息
-				sysUserInfoQuery(takerOverUserId);
-			}
-		} else {
-			super.onActivityResult(requestCode,resultCode,data);
-		}
-	}
-	private void sysUserInfoQuery(String userId){
-		// get请求
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.GET);
-		nrc.requestUrl = NetUrlConstant.SYSUSERQUERYURL;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		params.put("userId", userId);
-
-		nrc.setParams(params);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-							try {
-								JSONObject responseJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
 
 
-								JSONObject userJson = responseJson;
-								JSONObject groupJson = userJson.getJSONObject("userGroup");
-								String groupCode = groupJson.optString("code");
-								String userId = userJson.optString("userId");
-								String userName	 = userJson.optString("name");
-								String groupName	 = groupJson.optString("name");
-								m_takeOverGroupCode = groupCode;
-								if(groupCode.equals("00007")){//配送车
-									m_takerOverUserId = userId;
-									m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
-								}else if(groupCode.equals("00003")){//配送工
-									m_takerOverUserId = userId;
-									m_editTextTakeOverUserId.setText(userId+" ("+"姓名:"+userName+" | 工作组:"+groupName+")");
-								}else {
-									Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
-								}
-
-
-							}catch (IOException e){
-								Toast.makeText(StockManagerActivity.this, "无效账户！",
-										Toast.LENGTH_LONG).show();
-								Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-								startActivity(intent);
-								finish();
-							}catch (JSONException e) {
-								Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
-										Toast.LENGTH_LONG).show();
-								Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-								startActivity(intent);
-								finish();
-							}
-
-						}else{
-							Toast.makeText(StockManagerActivity.this, "请求交接人信息失败", Toast.LENGTH_LONG).show();
-//							Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-//							startActivity(intent);
-//							finish();
-						}
-					}else {
-						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
-								Toast.LENGTH_LONG).show();
-						Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-						startActivity(intent);
-						finish();
-					}
-				} else {
-					Toast.makeText(StockManagerActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-					Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-					startActivity(intent);
-					finish();
-				}
-			}
-		}, nrc);
-	}
-
-	//NFC更新重瓶表
-	private void refleshBottlesListZP(){
-		m_textViewTotalCountZP.setText(Integer.toString(m_BottlesListZP.size()));
+	//NFC更新空瓶表
+	private void refleshBottlesListKP(){
+		m_textViewTotalCountKP.setText(Integer.toString(m_BottlesMapKP.size()));
 		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
-
-		for(int i=0;i<m_BottlesListZP.size(); i++){
+		for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
-			bottleInfo.put("bottleCode", m_BottlesListZP.get(i));
+
+			bottleInfo.put("bottleCode", entry.getKey());
+			bottleInfo.put("bottleWeight", entry.getValue());
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 		}
+
 		//2、创建适配器（可以使用外部类的方式、内部类方式等均可）
 		SimpleAdapter simpleAdapter = new SimpleAdapter(
-				StockManagerActivity.this,/*传入一个上下文作为参数*/
+				BottleRecycleActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number}) ;
-		m_listView_zp.setAdapter(simpleAdapter);
-		setListViewHeightBasedOnChildren(m_listView_zp);
+				new String[]{"bottleCode","bottleWeight"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number,R.id.items_weight}) ;
+
+		m_listView_kp.setAdapter(simpleAdapter);
+		setListViewHeightBasedOnChildren(m_listView_kp);
 	}
 
-	//单个钢瓶交接
-	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isRuKu) {
-		//后面讨论如何处理第一次入库
-		if(m_takerOverUserId == null){
-			showToast("请扫码获取交接人信息！");
-			return;
-		}
-		//如果存在交接记录表里，就提示已经存在了
 
+	//单个钢瓶交接
+	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP) {
+
+
+		//如果存在交接记录表里，就提示已经存在了
 		boolean contained = false;
 
-		for(int i=0; i<m_BottlesListZP.size();i++){
-			if(m_BottlesListZP.get(i).equals(bottleCode)){
-				contained = true;
-				break;
-			}
+		if(m_BottlesMapKP.containsKey(bottleCode)){
+			contained = true;
 		}
 
 
 		if(contained){//已经存在了
-			showToast("钢瓶号："+bottleCode+"    请勿重复提交！");
-
+			Toast.makeText(BottleRecycleActivity.this, "钢瓶号："+bottleCode+"    请勿重复提交！",
+					Toast.LENGTH_LONG).show();
 			return;
 		}
 
@@ -454,13 +275,14 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 					HttpResponse response=(HttpResponse)res;
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==200){
-							MediaPlayer music = MediaPlayer.create(StockManagerActivity.this, R.raw.nfcok);
+							MediaPlayer music = MediaPlayer.create(BottleRecycleActivity.this, R.raw.nfcok);
 							music.start();
-							addZP(bottleCode);
+							addKP(bottleCode);
+
 						}else{
-							MediaPlayer music = MediaPlayer.create(StockManagerActivity.this, R.raw.alarm);
+							MediaPlayer music = MediaPlayer.create(BottleRecycleActivity.this, R.raw.alarm);
 							music.start();
-							new AlertDialog.Builder(StockManagerActivity.this).setTitle("钢瓶异常流转！")
+							new AlertDialog.Builder(BottleRecycleActivity.this).setTitle("钢瓶异常流转！")
 									.setMessage("钢瓶号 :"+bottleCode+"\r\n"+"错误原因:"+getResponseMessage(response)+"\r\n确认强制交接吗？")
 									.setIcon(R.drawable.icon_logo)
 									.setPositiveButton("确定",
@@ -471,7 +293,7 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 																	int which)
 												{
 													//强制交接
-													bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isRuKu);
+													bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP);
 												}
 											})
 									.setNegativeButton("取消",
@@ -487,36 +309,25 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 									.show();
 						}
 					}else {
-						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
+						Toast.makeText(BottleRecycleActivity.this, "未知错误，异常！",
 								Toast.LENGTH_LONG).show();
 					}
 				} else {
-					Toast.makeText(StockManagerActivity.this, "网络未连接！",
+					Toast.makeText(BottleRecycleActivity.this, "网络未连接！",
 							Toast.LENGTH_LONG).show();
 				}
 			}
 		}, nrc);
 	}
 
+	private void addKP(final String bottleCode){
 
-
-
-	private void addZP(String bottleCode) {
-
-		boolean contained = false;
-		for (int i = 0; i < m_BottlesListZP.size(); i++) {
-			if (m_BottlesListZP.get(i).equals(bottleCode)) {
-				contained = true;
-				break;
-			}
+		if(!m_BottlesMapKP.containsKey(bottleCode)){//第一次扫
+			m_BottlesMapKP.put(bottleCode, "0");
+			refleshBottlesListKP();
 		}
-		if (!contained) {//第一次扫
-			showToast(bottleCode);
-			m_BottlesListZP.add(bottleCode);
-			refleshBottlesListZP();
-		}
-
 	}
+
 
 	private String getResponseMessage(HttpResponse response) {
 		try {
@@ -540,11 +351,11 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 			String errorDetail = errorDetailJson.get("message").toString();
 			return errorDetail;
 		} catch (IOException e) {
-			Toast.makeText(StockManagerActivity.this, "未知错误，异常！" + e.getMessage(),
+			Toast.makeText(BottleRecycleActivity.this, "未知错误，异常！" + e.getMessage(),
 					Toast.LENGTH_LONG).show();
 			return null;
 		} catch (JSONException e) {
-			Toast.makeText(StockManagerActivity.this, "未知错误，异常！" + e.getMessage(),
+			Toast.makeText(BottleRecycleActivity.this, "未知错误，异常！" + e.getMessage(),
 					Toast.LENGTH_LONG).show();
 			return null;
 		}
@@ -758,10 +569,15 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 				if (ntag21x != null) {
 					try {
 						//ntag21x.NdefTextWrite("KMA123456789");
-						String bottleCode = ntag21x.NdefTextRead();
+						String textRead = ntag21x.NdefTextRead();
 						Message msg = new Message();
-						msg.obj = bottleCode;
-						msg.what = 0x88;//标签读取事件
+						msg.obj = textRead;
+						if(m_orderServiceQualityShowFlag){
+							msg.what = 0x89;//评价阶段
+						}else{
+							msg.what = 0x88;//扫码钢瓶阶段
+						}
+
 						handler.sendMessage(msg);
 
 
@@ -904,42 +720,30 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 						}
 					}).start();
 					break;
-				case 0x88:
-					//后面讨论如何处理第一次入库
-					if(m_takerOverUserId == null){//
-						showToast("请扫码获取交接人信息！");
+				case 0x88://钢瓶扫描
+					if(m_curUserId==null){
+						showToast("请先扫描用户卡");
 						return;
 					}
 					String bottleCode = msg.obj.toString();
-					String bottleStatus = new String();
-					if(m_selected_nfc_model==0){//ruku
-						if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
-							bottleStatus = "2";//门店库存
-						}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
-							bottleStatus = "1";//充气站库存
-						}else{
-							Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
-							return;
-						}
-						bottleTakeOverUnit(bottleCode, m_takerOverUserId, m_curLoginUserId.getUsername(), bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶入库", false, true);//钢瓶入库
-					}else if(m_selected_nfc_model==1){//chuku
-						if(m_curLoginUserId.getGroupCode().equals("00005")){//门店
-							if(m_takeOverGroupCode.equals("00007")){//配送车
-								bottleStatus = "3";//在途运输
-							}else if(m_takeOverGroupCode.equals("00003")){//配送工
-								bottleStatus = "4";//在途派送
-							}else {
-								Toast.makeText(StockManagerActivity.this, "非配送工或调拨车账户，请更换！",	Toast.LENGTH_LONG).show();
-								return;
-							}
-						}else if(m_curLoginUserId.getGroupCode().equals("00006")){//充气站
-							bottleStatus = "3";//在途运输
-						}else{
-							Toast.makeText(StockManagerActivity.this, "非充气站或门店账户，请退出！",	Toast.LENGTH_LONG).show();
-							return;
-						}
-						bottleTakeOverUnit(bottleCode, m_curLoginUserId.getUsername(), m_takerOverUserId, bottleStatus, m_curLoginUserId.getDepartmentName()+"|钢瓶出库", false, false);//钢瓶出库
+					String textArrayBottle[] = bottleCode.split(":");
+					if(textArrayBottle.length==2) {
+						showToast("无效钢瓶码格式！");
+						return;
 					}
+					bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", "无订单流程"+"|空瓶回收", false, true);//空瓶回收
+					break;
+				case 0x89://扫描用户卡
+					String readText = msg.obj.toString();
+					String textArray[] = readText.split(":");
+					if(textArray.length!=2){
+						showToast("无效卡格式！");
+						return;
+					}else {
+						String userCardIndex = textArray[1];
+						GetUserCardInfo(userCardIndex);
+					}
+
 					break;
 
 			}
@@ -972,90 +776,37 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		}
 	}
 
-	private void cleanAll(){
-		m_takerOverUserId = null;
-		m_BottlesListZP.clear();
-		refleshBottlesListZP();
-		m_editTextTakeOverUserId.setText("");
 
 
-	}
+	//用户卡评价弹窗
+	private void orderServiceQualityShow(){
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		//builder.setCancelable(false);
+		View view = View.inflate(this, R.layout.user_evaluate, null);   // 账号、密码的布局文件，自定义
+		builder.setIcon(R.drawable.icon_logo);//设置对话框icon
+		builder.setTitle("用户卡确认");
+		m_dialog = builder.create();
+		m_dialog.setView(view);
+		m_dialog.setOnDismissListener(new OnDismissListener() {
 
-	@Override
-	public boolean dispatchKeyEvent(KeyEvent event)
-	{
-		if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 &&event.getAction() == KeyEvent.ACTION_DOWN)        {
-			new AlertDialog.Builder(StockManagerActivity.this).setTitle("提示")
-					.setMessage("确认退出吗？")
-					.setIcon(R.drawable.icon_logo)
-					.setPositiveButton("确定",
-							new DialogInterface.OnClickListener()
-							{
-								@Override
-								public void onClick(DialogInterface dialog,
-													int which)
-								{
-									android.os.Process.killProcess(android.os.Process.myPid()); // 结束进程
-								}
-							})
-					.setNegativeButton("退出登录",
-							new DialogInterface.OnClickListener()
-							{
-								@Override
-								public void onClick(DialogInterface dialog,
-													int which)
-								{
-									loginOut();//重新登陆
-								}
-							})
-					.show();
-			return false;
-		}
-		else
-		{
-			return super.dispatchKeyEvent(event);
-		}
-	}
-	private void loginOut(){
-		SharedPreferencesHelper.put("username", "");
-		SharedPreferencesHelper.put("password", "");
-		// get请求
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.GET);
-		final String username = m_curLoginUserId.getUsername();
-		final String password = m_curLoginUserId.getPassword();
-		nrc.requestUrl = NetUrlConstant.LOGINOUTURL+"/"+username;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		nrc.setParams(params);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-							//设置退出登录
-							Intent intent = new Intent(getApplicationContext() , LoginActivity.class);
-							startActivity(intent);
-							finish();
-						}else{
-							Toast.makeText(StockManagerActivity.this, "退出登录失败", Toast.LENGTH_LONG).show();
-						}
-					}else {
-						Toast.makeText(StockManagerActivity.this, "未知错误，异常！",
-								Toast.LENGTH_LONG).show();
-					}
-				} else {
-					Toast.makeText(StockManagerActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-				}
+			@Override
+			public void onDismiss(DialogInterface dialog) {
+				//处理监听事件
+				m_orderServiceQualityShowFlag = false;
 			}
-		}, nrc);
+		});
+		m_dialog.show();
+		Window dialogWindow = m_dialog.getWindow();//获取window对象
+		dialogWindow.setGravity(Gravity.CENTER);//设置对话框位置
+		dialogWindow.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);//设置横向全屏
+		m_orderServiceQualityShowFlag = true;
+
 	}
+
 
 	private void showToast(String info){
 		if(toast ==null){
-			toast = Toast.makeText(StockManagerActivity.this, null, Toast.LENGTH_SHORT);
+			toast = Toast.makeText(BottleRecycleActivity.this, null, Toast.LENGTH_SHORT);
 			toast.setGravity(Gravity.CENTER, 0, 0);
 			LinearLayout toastView = (LinearLayout)toast.getView();
 			WindowManager wm = (WindowManager)this.getSystemService(this.WINDOW_SERVICE);
@@ -1077,22 +828,60 @@ public class StockManagerActivity extends BaseActivity implements OnClickListene
 		tv.setText(info);
 		toast.show();
 	}
-	public  void isOpenGPS(){
-		LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-		if (!locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)){
-			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-			dialog.setMessage("GPS未打开，本配送程序必须打开!");
-			dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-					// 设置完成后返回到原来的界面
-					startActivityForResult(intent,0);
-				}
-			});
-			dialog.show();
-		}
+	//查询用户的用户卡号对应的用户名称
+	private void GetUserCardInfo(String userCardNumber) {
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+
+		nrc.requestUrl = NetUrlConstant.USERCARDURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+
+
+		params.put("number",userCardNumber);
+		//params.put("status", 1);//1 使用中
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag) {
+					HttpResponse response = (HttpResponse) res;
+					if (response != null) {
+						if (response.getStatusLine().getStatusCode() == 200) {
+							try {
+								JSONObject userCardsJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray userCardsListJson = userCardsJson.getJSONArray("items");
+								if(userCardsListJson.length()==1){
+									JSONObject userJson =  userCardsListJson.getJSONObject(0).getJSONObject("user");
+									m_curUserId = userJson.getString("userId");
+									m_curUserInfo = userJson.getString("name");
+									m_textViewUserInfo.setText(m_curUserId+"  |  "+m_curUserInfo);
+									m_dialog.dismiss();
+								}else{
+									m_curUserId = null;
+									m_curUserInfo = null;
+									showToast("未绑定用户卡");
+									m_textViewUserInfo.setText("");
+								}
+
+							} catch (JSONException e) {
+								Toast.makeText(BottleRecycleActivity.this, "未知错误，异常！" + e.getMessage(),
+										Toast.LENGTH_LONG).show();
+							} catch (IOException e) {
+								Toast.makeText(BottleRecycleActivity.this, "未知错误，异常！" + e.getMessage(),
+										Toast.LENGTH_LONG).show();
+							}
+						} else {
+							Toast.makeText(BottleRecycleActivity.this, "用户卡查询失败",
+									Toast.LENGTH_LONG).show();
+						}
+					} else {
+						Toast.makeText(BottleRecycleActivity.this, "网络未连接！",
+								Toast.LENGTH_LONG).show();
+					}
+				}}}, nrc);
 	}
+
 
 }

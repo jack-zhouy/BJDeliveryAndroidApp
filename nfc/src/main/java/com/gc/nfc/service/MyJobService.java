@@ -3,6 +3,7 @@ package com.gc.nfc.service;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
+import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.annotation.RequiresApi;
 import android.app.job.JobParameters;
@@ -18,7 +19,9 @@ import android.app.ActivityManager;
 import android.content.Context;
 
 import com.gc.nfc.ui.AutoLoginActivity;
+import com.gc.nfc.ui.BottleRecycleActivity;
 import com.gc.nfc.ui.MainlyActivity;
+import com.gc.nfc.ui.MybottlesActivity;
 import com.gc.nfc.utils.AmapLocationService;
 
 /**JobService，支持5.0以上forcestop依然有效
@@ -51,19 +54,26 @@ public class MyJobService extends JobService {
         try {
             if (Build.VERSION.SDK_INT >= 21) {
                 String servicename = params.getExtras().getString("servicename");
+                String userId = params.getExtras().getString("userId");
+
                 Class service = getClassLoader().loadClass(servicename);
                 if (service != null) {
                     //判断保活的service是否被杀死
                     if (!isMyServiceRunning(service)) {
+
+                        Intent intentAmap = new Intent(getApplicationContext(), service);
+                        Bundle bundleAmap = new Bundle();
+                        bundleAmap.putString("userId", userId);
+                        intentAmap.putExtras(bundleAmap);
                         //重启service
-                        startService(new Intent(getApplicationContext(), service));
+                        startService(new Intent(intentAmap));
                     }else{
-                        Toast.makeText(this, "alive",
-                                Toast.LENGTH_LONG).show();
+//                        Toast.makeText(this, "alive",
+//                                Toast.LENGTH_LONG).show();
                     }
                 }
                 jobFinished(params, false);
-                startJobScheduler();
+                startJobScheduler(userId);
                 return true;
             }
         } catch (Exception e) {
@@ -91,7 +101,7 @@ public class MyJobService extends JobService {
 
 
     @RequiresApi(21)
-    public void startJobScheduler() {
+    public void startJobScheduler(String userId) {
         JobScheduler JobScheduler = (JobScheduler) getSystemService( Context.JOB_SCHEDULER_SERVICE );
 
         int id = 55;
@@ -108,6 +118,7 @@ public class MyJobService extends JobService {
         builder.setRequiresCharging(true); // 当插入充电器，执行该任务
         PersistableBundle persiBundle = new PersistableBundle();
         persiBundle.putString("servicename", AmapLocationService.class.getName());
+        persiBundle.putString("userId", userId);
         builder.setExtras(persiBundle);
         JobInfo info = builder.build();
 

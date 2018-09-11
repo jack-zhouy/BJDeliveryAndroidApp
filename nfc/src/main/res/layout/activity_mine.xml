@@ -260,6 +260,36 @@
                 android:background="@color/textgray" />
 
             <LinearLayout
+                android:id="@+id/lL_recycle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="10dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="34dp"
+                    android:layout_height="38dp"
+                    android:layout_marginLeft="10dp"
+                    android:src="@drawable/icon_bottle" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="空瓶回收"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="5dp"
+                android:background="@color/textgray" />
+
+
+            <LinearLayout
                 android:id="@+id/lL_mySetting"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -282,6 +312,12 @@
                     android:textSize="15sp" />
 
             </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="5dp"
+                android:background="@color/textgray" />
+
             <LinearLayout
                 android:id="@+id/lL_myLogout"
                 android:layout_width="match_parent"
