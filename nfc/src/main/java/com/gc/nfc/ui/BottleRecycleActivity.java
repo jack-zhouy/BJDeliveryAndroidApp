@@ -282,31 +282,43 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 						}else{
 							MediaPlayer music = MediaPlayer.create(BottleRecycleActivity.this, R.raw.alarm);
 							music.start();
-							new AlertDialog.Builder(BottleRecycleActivity.this).setTitle("钢瓶异常流转！")
-									.setMessage("钢瓶号 :"+bottleCode+"\r\n"+"错误原因:"+getResponseMessage(response)+"\r\n确认强制交接吗？")
-									.setIcon(R.drawable.icon_logo)
-									.setPositiveButton("确定",
-											new DialogInterface.OnClickListener()
-											{
-												@Override
-												public void onClick(DialogInterface dialog,
-																	int which)
+							//409才允许强制交接
+							if(response.getStatusLine().getStatusCode()==409){
+								new AlertDialog.Builder(BottleRecycleActivity.this).setTitle("钢瓶异常流转！")
+										.setMessage("钢瓶号 :"+bottleCode+"\r\n"+"错误原因:"+getResponseMessage(response)+"\r\n确认强制交接吗？")
+										.setIcon(R.drawable.icon_logo)
+										.setPositiveButton("确定",
+												new DialogInterface.OnClickListener()
 												{
-													//强制交接
-													bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP);
-												}
-											})
-									.setNegativeButton("取消",
-											new DialogInterface.OnClickListener()
-											{
-												@Override
-												public void onClick(DialogInterface dialog,
-																	int which)
+													@Override
+													public void onClick(DialogInterface dialog,
+																		int which)
+													{
+														//强制交接
+														bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP);
+													}
+												})
+										.setNegativeButton("取消",
+												new DialogInterface.OnClickListener()
 												{
-
-												}
-											})
-									.show();
+													@Override
+													public void onClick(DialogInterface dialog,
+																		int which) {}
+												})
+										.show();
+							}else{
+								new AlertDialog.Builder(BottleRecycleActivity.this).setTitle("钢瓶异常流转！")
+										.setMessage("钢瓶号 :"+bottleCode+"\r\n"+"错误原因:"+getResponseMessage(response))
+										.setIcon(R.drawable.icon_logo)
+										.setPositiveButton("确定",
+												new DialogInterface.OnClickListener()
+												{
+													@Override
+													public void onClick(DialogInterface dialog,
+																		int which) {
+													}
+												}).show();
+							}
 						}
 					}else {
 						Toast.makeText(BottleRecycleActivity.this, "未知错误，异常！",
