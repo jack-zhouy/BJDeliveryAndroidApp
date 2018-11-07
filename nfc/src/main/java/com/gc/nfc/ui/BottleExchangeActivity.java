@@ -98,6 +98,8 @@ import android.view.LayoutInflater;
 import java.util.Set;
 import java.util.Iterator;
 import android.content.DialogInterface.OnDismissListener;
+import android.text.TextWatcher;
+import android.text.Editable;
 
 
 public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
@@ -168,6 +170,14 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	/**
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
+	private int m_ptp_quantity_5kg;//瓶换瓶数量
+	private int m_ptp_quantity_15kg;//瓶换瓶数量
+	private int m_ptp_quantity_50kg;//瓶换瓶数量
+	private int m_yjp_quantity_5kg;//押金瓶数量
+	private int m_yjp_quantity_15kg;//押金瓶数量
+	private int m_yjp_quantity_50kg;//押金瓶数量
+	private String m_yjp_ys_total;//押金瓶应收金额total
+	private String m_yjp_ss_total;//押金瓶实收金额total
 
 
 	protected void onCreate(Bundle savedInstanceState) {
@@ -268,6 +278,17 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			//用户已有用户卡查询
 			GetUserCard();
 
+			//电子押金单初始化
+			m_ptp_quantity_5kg = 0;//瓶换瓶数量
+			m_ptp_quantity_15kg = 0;//瓶换瓶数量
+			m_ptp_quantity_50kg = 0;//瓶换瓶数量
+			m_yjp_quantity_5kg = 0;//押金瓶数量
+			m_yjp_quantity_15kg = 0;//押金瓶数量
+			m_yjp_quantity_50kg = 0;//押金瓶数量
+			m_yjp_ys_total= "";//押金瓶应收金额total
+			m_yjp_ss_total= "";//押金瓶实收金额total
+
+
 		}catch (JSONException e){
 			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
@@ -343,6 +364,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.button_next:
+				if(!isBottlesQuantityOK()){//空重瓶交接不符合
+					return;
+				}
+				//createElectDep();
+
 //				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
 //						Toast.LENGTH_LONG).show();
 //				m_buttonNext.setText("正在提交...");
@@ -666,18 +692,13 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					String key = (String)iter.next();
 					m_bundle.putString(key, m_BottlesMapKP.get(key));
 				}
-				Intent intent = new Intent();
+				//提交电子押金单
+				createElectDep();
 
-				//将传过来的任务订单参数传到托盘订单计费页面
-				intent.setClass(BottleExchangeActivity.this, TrayOrderDealActivity.class);
-				intent.putExtras(m_bundle);
-				startActivity(intent);
+
 			}else{
-				Intent intent = new Intent();
-				//将传过来的任务订单参数传到下一个页面
-				intent.setClass(BottleExchangeActivity.this, OrderDealActivity.class);
-				intent.putExtras(m_bundle);
-				startActivity(intent);
+				//提交电子押金单
+				createElectDep();
 			}
 		}
 	};
@@ -1160,7 +1181,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		}
 	}
 
-
 	//上传回收瓶号
 	private boolean upLoadGasCylinder() {
 
@@ -1238,8 +1258,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		builder.setCancelable(false);
 		builder.show();
 	}
-
-
 
 	//提交钢瓶重量
 	public void upLoadBottleWeight(String bottleCode, String weight, boolean isZP) {
@@ -1330,6 +1348,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 							if(response.getStatusLine().getStatusCode()==200){
 								//评价成功，跳转支付
 								handler_old.sendEmptyMessageDelayed(0,3000);
+
 
 							}else if(response.getStatusLine().getStatusCode()==404){
 								Toast.makeText(BottleExchangeActivity.this, "订单不存在",
@@ -1423,6 +1442,261 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 								Toast.LENGTH_LONG).show();
 					}
 				}}}, nrc);
+	}
+
+	//应收金额自动计算
+private void addEditViewChanged(EditText eEditText, final int unitPrice, final TextView eTextView, final View layout){
+	eEditText.addTextChangedListener(new TextWatcher(){
+
+		public void afterTextChanged(Editable s) {
+			int quantity = 0;
+			if(s.toString().equals("")){
+			}else{
+				quantity = Integer.parseInt(s.toString());
+			}
+			int ysPrice = quantity*unitPrice;
+			eTextView.setText(String.valueOf(ysPrice));
+			//计算应收总价
+			TextView textView_5kg_ys_price = (TextView) layout.findViewById(R.id.textView_yjp_5kg_ys);
+			TextView textView_15kg_ys_price = (TextView) layout.findViewById(R.id.textView_yjp_15kg_ys);
+			TextView textView_50kg_ys_price = (TextView) layout.findViewById(R.id.textView_yjp_50kg_ys);
+			int totalYsPrice = Integer.parseInt(getTextViewToString(textView_5kg_ys_price))+Integer.parseInt(getTextViewToString(textView_15kg_ys_price))+
+					Integer.parseInt(getTextViewToString(textView_50kg_ys_price));
+			TextView textView_ys_temp = (TextView) layout.findViewById(R.id.textView_ys);
+			textView_ys_temp.setText(String.valueOf(totalYsPrice));
+
+
+		}
+		public void beforeTextChanged(CharSequence s, int start, int count,
+									  int after) {}
+		public void onTextChanged(CharSequence s, int start, int before,
+								  int count) {}
+	});
+}
+
+	private void show_deposit_slip() {
+
+		LayoutInflater inflater = getLayoutInflater();
+		final View layout = inflater.inflate(R.layout.show_deposit_slip, null);
+		EditText textView_5kg_quantity = (EditText) layout.findViewById(R.id.textView_yjp_5kg_quantity);
+		EditText textView_15kg_quantity = (EditText) layout.findViewById(R.id.textView_yjp_15kg_quantity);
+		EditText textView_50kg_quantity = (EditText) layout.findViewById(R.id.textView_yjp_50kg_quantity);
+
+		TextView textView_5kg_ys_price = (TextView) layout.findViewById(R.id.textView_yjp_5kg_ys);
+		TextView textView_15kg_ys_price = (TextView) layout.findViewById(R.id.textView_yjp_15kg_ys);
+		TextView textView_50kg_ys_price = (TextView) layout.findViewById(R.id.textView_yjp_50kg_ys);
+		addEditViewChanged(textView_5kg_quantity,85, textView_5kg_ys_price, layout);
+		addEditViewChanged(textView_15kg_quantity,160, textView_15kg_ys_price, layout);
+		addEditViewChanged(textView_50kg_quantity,500, textView_50kg_ys_price, layout);
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("电子押金单").setIcon(
+				R.drawable.icon_app).setView(
+				layout).setPositiveButton("确定",
+				new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog,
+										int which) {
+						m_ptp_quantity_5kg = getEditTextToInt((EditText) layout.findViewById(R.id.textView_ptp_5kg_quantity));//瓶换瓶数量
+						m_ptp_quantity_15kg = getEditTextToInt((EditText) layout.findViewById(R.id.textView_ptp_15kg_quantity));//瓶换瓶数量
+						m_ptp_quantity_50kg = getEditTextToInt((EditText) layout.findViewById(R.id.textView_ptp_50kg_quantity));//瓶换瓶数量
+						m_yjp_quantity_5kg = getEditTextToInt((EditText) layout.findViewById(R.id.textView_yjp_5kg_quantity));//押金瓶数量
+						m_yjp_quantity_15kg = getEditTextToInt((EditText) layout.findViewById(R.id.textView_yjp_15kg_quantity));//押金瓶数量
+						m_yjp_quantity_50kg = getEditTextToInt((EditText) layout.findViewById(R.id.textView_yjp_50kg_quantity));//押金瓶数量
+						m_yjp_ys_total = getTextViewToString((TextView) layout.findViewById(R.id.textView_ys));//押金瓶应收金额total
+						m_yjp_ss_total = getTextViewToString((EditText) layout.findViewById(R.id.editView_ss));//押金瓶实收金额total
+					}
+				});
+		builder.setCancelable(false);
+		builder.show();
+
+	}
+	private int getEditTextToInt(EditText eEditText){
+		if(eEditText.getText().toString().equals("")){
+			return 0;
+		}else{
+			return Integer.parseInt(eEditText.getText().toString());
+		}
+	}
+	private String getTextViewToString(TextView textView){
+		if(textView.getText().toString().equals("")){
+			return "0";
+		}else{
+			return textView.getText().toString();
+		}
+	}
+
+	//校验已经交接以及电子押金单的钢瓶数量型号与订单内容是否一致
+	private boolean isBottlesQuantityOK() {
+		try {
+			//获取订单的商品详情
+			JSONArray orderDetailList = m_OrderJson.getJSONArray("orderDetailList");
+			Map<String, Integer> goodsMapQuantity = new HashMap<String, Integer>(); //统计每个规格的数量
+			for (int i = 0; i < orderDetailList.length(); i++) {
+				//找出商品规格
+				JSONObject orderDetail = orderDetailList.getJSONObject(i);  // 订单详情单条记录
+				JSONObject goodDetail = orderDetail.getJSONObject("goods");  // 商品详情
+				String goodCode = goodDetail.get("code").toString();
+				int tempCount = Integer.parseInt(orderDetail.get("quantity").toString());
+				if(goodsMapQuantity.containsKey(goodCode)){
+					int totalCount = goodsMapQuantity.get(goodCode);
+					totalCount += tempCount;
+					goodsMapQuantity.remove(goodCode);
+					goodsMapQuantity.put(goodCode,totalCount);
+				}else{
+					goodsMapQuantity.put(goodCode,tempCount);
+				}
+			}
+
+
+			//订单中的钢瓶数量
+			int iQuantityOrder_total = 0;
+			for (String key : goodsMapQuantity.keySet()) {
+				Integer quantity_temp = goodsMapQuantity.get(key);
+				iQuantityOrder_total += quantity_temp;
+			}
+			if(iQuantityOrder_total!=m_BottlesMapZP.size()){
+				Toast.makeText(BottleExchangeActivity.this, "重瓶交接数量与订单不符合！",
+						Toast.LENGTH_LONG).show();
+				return false;
+			}
+			//判断空的交接是否匹配
+			int iQuantityKpJJ_total = m_BottlesMapKP.size()+m_ptp_quantity_5kg+m_ptp_quantity_15kg+m_ptp_quantity_50kg+
+					m_yjp_quantity_5kg+m_yjp_quantity_15kg+m_yjp_quantity_50kg;
+			if(iQuantityKpJJ_total!=iQuantityOrder_total){
+				Toast.makeText(BottleExchangeActivity.this, "空瓶回收与重瓶数量不符，请重新填写电子押金单！",
+						Toast.LENGTH_LONG).show();
+				show_deposit_slip();
+				return false;
+			}
+
+		}catch (JSONException e){
+			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return false;
+		}
+		return true;
+	}
+
+
+	//上传电子押金单
+	private void createElectDep() {
+		// POST
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.POST);
+
+		nrc.requestUrl = NetUrlConstant.ElectDepositURL;
+		nrc.context = this;
+		Map<String, Object> body = new HashMap<String, Object>();
+		body.put("customerId",m_curUserId);
+		body.put("operId",m_deliveryUser.getUsername());
+		body.put("amountReceivable",m_yjp_ys_total);
+		body.put("actualAmount",m_yjp_ss_total);
+
+		JSONArray detail = createElectDepDetails();
+		if(detail==null){
+			Intent intent = new Intent();
+			//将传过来的任务订单参数传到托盘订单计费页面
+			intent.setClass(BottleExchangeActivity.this, TrayOrderDealActivity.class);
+			intent.putExtras(m_bundle);
+			startActivity(intent);
+			return;
+		}
+		body.put("electDepositDetails",detail);
+		nrc.setBody(body);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==201){
+							Intent intent = new Intent();
+							//将传过来的任务订单参数传到托盘订单计费页面
+							intent.setClass(BottleExchangeActivity.this, TrayOrderDealActivity.class);
+							intent.putExtras(m_bundle);
+							startActivity(intent);
+
+						} else{
+							Toast.makeText(BottleExchangeActivity.this, "电子押金单上传失败，"+getResponseMessage(response)+response.getStatusLine().getStatusCode(),
+									Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+		return ;
+	}
+
+	private JSONArray createElectDepDetails(){
+		try {
+			JSONArray electDepDetails = new JSONArray();
+			JSONObject spec_5kg = new JSONObject();
+			JSONObject spec_15kg = new JSONObject();
+			JSONObject spec_50kg = new JSONObject();
+			spec_5kg.put("code", "0001");
+			spec_15kg.put("code", "0002");
+			spec_50kg.put("code", "0003");
+
+			if(m_ptp_quantity_5kg!=0){//5kg瓶换瓶数量
+				JSONObject electDepDetail_temp = new JSONObject();
+				electDepDetail_temp.put("electDepositType", "EBottleChanging");
+				electDepDetail_temp.put("gasCylinderSpec", spec_5kg);
+				electDepDetail_temp.put("quantity", m_ptp_quantity_5kg);
+				electDepDetails.put(electDepDetail_temp);
+			}
+			if(m_ptp_quantity_15kg!=0){//15kg瓶换瓶数量
+				JSONObject electDepDetail_temp = new JSONObject();
+				electDepDetail_temp.put("electDepositType", "EBottleChanging");
+				electDepDetail_temp.put("gasCylinderSpec", spec_15kg);
+				electDepDetail_temp.put("quantity", m_ptp_quantity_15kg);
+				electDepDetails.put(electDepDetail_temp);
+			}
+			if(m_ptp_quantity_50kg!=0){//50kg瓶换瓶数量
+				JSONObject electDepDetail_temp = new JSONObject();
+				electDepDetail_temp.put("electDepositType", "EBottleChanging");
+				electDepDetail_temp.put("gasCylinderSpec", spec_50kg);
+				electDepDetail_temp.put("quantity", m_ptp_quantity_50kg);
+				electDepDetails.put(electDepDetail_temp);
+			}
+
+			if(m_yjp_quantity_5kg!=0){//5kg押金瓶数量
+				JSONObject electDepDetail_temp = new JSONObject();
+				electDepDetail_temp.put("electDepositType", "EDepositBottle");
+				electDepDetail_temp.put("gasCylinderSpec", spec_5kg);
+				electDepDetail_temp.put("quantity", m_yjp_quantity_5kg);
+				electDepDetails.put(electDepDetail_temp);
+			}
+			if(m_yjp_quantity_15kg!=0){//15kg押数量
+				JSONObject electDepDetail_temp = new JSONObject();
+				electDepDetail_temp.put("electDepositType", "EDepositBottle");
+				electDepDetail_temp.put("gasCylinderSpec", spec_15kg);
+				electDepDetail_temp.put("quantity", m_yjp_quantity_15kg);
+				electDepDetails.put(electDepDetail_temp);
+			}
+			if(m_yjp_quantity_50kg!=0){//50kg押金瓶数量
+				JSONObject electDepDetail_temp = new JSONObject();
+				electDepDetail_temp.put("electDepositType", "EDepositBottle");
+				electDepDetail_temp.put("gasCylinderSpec", spec_50kg);
+				electDepDetail_temp.put("quantity", m_yjp_quantity_50kg);
+				electDepDetails.put(electDepDetail_temp);
+			}
+			if(electDepDetails.length()==0){
+				return null;
+			}else{
+				return electDepDetails;
+			}
+
+
+		}catch (JSONException e){
+			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return null;
+		}
 	}
 
 

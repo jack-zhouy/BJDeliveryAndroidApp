@@ -26,7 +26,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -160,7 +162,6 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
 
                                 for(int i=0;i<taskOrdersListJson.length(); i++){
                                     JSONObject taskorder = taskOrdersListJson.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
-
                                     //如果是脏数据就过滤！
                                     if(taskorder.getString("object").equals("null")){
                                         continue;
@@ -177,8 +178,8 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
                                                 isSpecialOrder=true;
                                             }
                                         }
-
                                     }
+
 
                                     //=================
                                     Map<String,Object> orderInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
@@ -205,16 +206,27 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
                                     } else{
                                         orderInfo.put("userIcon", R.drawable.icon_common_user);
                                     }
+                                    boolean urgent = order.getBoolean("urgent");
+                                    if(urgent){
+                                        orderInfo.put("urgent", "加急");
+                                    }else{
+                                        orderInfo.put("urgent", "");
+                                    }
+
 
                                     list_map.add(orderInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
                                 }
+
+
+
                                 //2、创建适配器（可以使用外部类的方式、内部类方式等均可）
                                 SimpleAdapter simpleAdapter = new SimpleAdapter(
                                         ValidOrdersActivity.this,/*传入一个上下文作为参数*/
                                         list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
                                         R.layout.order_list_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-                                        new String[]{"orderSn", "createTime",  "userId",  "userPhone", "userIcon", "address","orderStatus"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-                                        new int[]{R.id.items_orderSn,R.id.items_creatTime,R.id.items_userId,R.id.items_userPhone, R.id.items_imageUserIcon,  R.id.items_address, R.id.items_orderStatus}) ;
+                                        new String[]{"orderSn", "createTime",  "userId",  "userPhone", "userIcon", "address","orderStatus","urgent"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+                                        new int[]{R.id.items_orderSn,R.id.items_creatTime,R.id.items_userId,R.id.items_userPhone, R.id.items_imageUserIcon,  R.id.items_address, R.id.items_orderStatus,
+                                                R.id.items_urgent}) ;
 //                                {
 //                                    @Override
 //                                    public View getView(int position, View convertView, ViewGroup parent) {
@@ -282,4 +294,6 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
         // TODO Auto-generated method stub
         super.onStart();
     }
+
+
 }

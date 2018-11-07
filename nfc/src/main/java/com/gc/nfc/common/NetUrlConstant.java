@@ -2,8 +2,8 @@ package com.gc.nfc.common;
 
 public class NetUrlConstant {
 
-	public static final String BASEURL = "http://www.yunnanbaijiang.com";//系统基地址
-	//public static final String BASEURL = "http://47.106.71.160";//系统基地址
+	//public static final String BASEURL = "http://www.yunnanbaijiang.com";//系统基地址
+	public static final String BASEURL = "http://47.106.71.160";//系统基地址
 	public static final String LOGINURL = BASEURL+"/api/sysusers/login";//登录接口
 	public static final String LOGINOUTURL = BASEURL+"/api/sysusers/logout";//登出接口
 	public static final String TASKORDERSURL = BASEURL+"/api/TaskOrders";//任务订单接口
@@ -29,7 +29,6 @@ public class NetUrlConstant {
 
 	public static final String SYSUSERQUERYURL = BASEURL+"/api/sysusers/FindByUserId";  //系统用户信息查询
 
-
 	public static final String UNINTERRUPTORDERSURL = BASEURL+"/api/UninterruptOrders";  //不间断供气订单信息查询
 	public static final String UNINTERRUPTORDERSCACULATEURL = BASEURL+"/api/UninterruptOrders/Caculate";  //不间断定气订单价格计算
 	public static final String UNINTERRUPTORDERSPAYURL = BASEURL+"/api/UninterruptOrders/Pay";  //7.10.	不间断定气订单支付
@@ -40,4 +39,7 @@ public class NetUrlConstant {
 
 	public static final String ORDERCACULATEURL = BASEURL+"/api/Orders/Caculate";  //订单残气计算
 	public static final String USERCARDURL = BASEURL+"/api/UserCard";  //用户卡
+	public static final String ElectDepositURL = BASEURL+"/api/ElectDeposit";  //电子押金单
+
+
 }

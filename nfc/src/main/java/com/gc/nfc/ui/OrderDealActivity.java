@@ -1075,7 +1075,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 
 			if(m_isCommonUser){
 				//如果结算类型是普通用户，就需要提交支付方式参数
-				String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit"};//扫码，现金，赊销
+				String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit","PTWxOffLine"};//扫码，现金，赊销,微信线下扫码
 				if(m_curUserSettlementType.get("code").toString().equals("00001")){//普通客户
 					body.put("payType",payTypes[m_spinnerPaytype.getSelectedItemPosition()]);//支付方式
 				}
@@ -1274,4 +1274,6 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			super.handleMessage(msg);
 		}
 	};
+
+
 }

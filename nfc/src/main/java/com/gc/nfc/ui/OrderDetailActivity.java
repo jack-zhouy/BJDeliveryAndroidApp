@@ -31,7 +31,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -521,7 +523,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 
 						}else{
-							Toast.makeText(OrderDetailActivity.this, "抢单失败", Toast.LENGTH_LONG).show();
+							Toast.makeText(OrderDetailActivity.this, "抢单失败，"+getResponseMessage(response), Toast.LENGTH_LONG).show();
 						}
 					}else {
 						Toast.makeText(OrderDetailActivity.this, "未知错误，异常！",
@@ -699,6 +701,38 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 		}
 
 
+	}
+
+	private String getResponseMessage(HttpResponse response) {
+		try {
+
+			BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
+					.getContent()));
+			StringBuffer sb = new StringBuffer("");
+			String line = "";
+			String NL = System.getProperty("line.separator");
+			while ((line = in.readLine()) != null) {
+				sb.append(line + NL);
+			}
+			in.close();
+			String responseBody = sb.toString();
+
+			if (responseBody.equals("")) {
+				responseBody = "{\"message\":\"no value\"}";
+			}
+
+			JSONObject errorDetailJson = new JSONObject(responseBody);
+			String errorDetail = errorDetailJson.get("message").toString();
+			return errorDetail;
+		} catch (IOException e) {
+			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！" + e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return null;
+		} catch (JSONException e) {
+			Toast.makeText(OrderDetailActivity.this, "未知错误，异常！" + e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return null;
+		}
 	}
 
 }

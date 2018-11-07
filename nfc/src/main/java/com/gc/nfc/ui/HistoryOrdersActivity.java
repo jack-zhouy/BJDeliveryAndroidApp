@@ -172,15 +172,27 @@ public class HistoryOrdersActivity extends BaseActivity implements OnClickListen
                                         orderInfo.put("userIcon", R.drawable.icon_common_user);
                                     }
 
+                                    boolean urgent = order.getBoolean("urgent");
+                                    if(urgent){
+                                        orderInfo.put("urgent", "加急");
+                                    }else{
+                                        orderInfo.put("urgent", "");
+                                    }
+
+
                                     list_map.add(orderInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
                                 }
+
+
+
                                 //2、创建适配器（可以使用外部类的方式、内部类方式等均可）
                                 SimpleAdapter simpleAdapter = new SimpleAdapter(
                                         HistoryOrdersActivity.this,/*传入一个上下文作为参数*/
                                         list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
                                         R.layout.order_list_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-                                        new String[]{"orderSn", "createTime",  "userId",  "userPhone", "userIcon", "address","orderStatus"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-                                        new int[]{R.id.items_orderSn,R.id.items_creatTime,R.id.items_userId,R.id.items_userPhone, R.id.items_imageUserIcon,  R.id.items_address, R.id.items_orderStatus}) ;
+                                        new String[]{"orderSn", "createTime",  "userId",  "userPhone", "userIcon", "address","orderStatus","urgent"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+                                        new int[]{R.id.items_orderSn,R.id.items_creatTime,R.id.items_userId,R.id.items_userPhone, R.id.items_imageUserIcon,  R.id.items_address, R.id.items_orderStatus,
+                                                R.id.items_urgent}) ;
 //                                {
 //                                    @Override
 //                                    public View getView(int position, View convertView, ViewGroup parent) {
