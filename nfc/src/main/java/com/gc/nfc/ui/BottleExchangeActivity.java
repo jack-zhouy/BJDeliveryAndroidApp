@@ -158,7 +158,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	private boolean isSpecialOrder;//是否是托盘订单
 
-	private int m_updateWeightCount;//提交钢瓶重量次数计数
 
 	private boolean m_orderServiceQualityShowFlag;//是否是用户评价阶段
 
@@ -221,15 +220,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_buttonNext.setOnClickListener(this);
 			radioGroup_nfc.setOnCheckedChangeListener(listen);
 			radioGroup_nfc.check(radioButton_kp.getId());//默认是空瓶
-
 			//数据结构初始化
 			m_userBottlesMap = new HashMap<String, JSONObject>();
 			m_myBottlesMap = new HashMap<String, JSONObject>();
 			m_BottlesMapKP = new HashMap<String,String>();
 			m_BottlesMapZP = new HashMap<String,String>();
-
-
-
 			//获取当前配送工
 			appContext = (AppContext) getApplicationContext();
 			m_deliveryUser = appContext.getUser();
@@ -247,22 +242,23 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					//录入钢瓶重量
 					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
 					String bottleCode = bottleCodeTextView.getText().toString();
-					getBottleWeight(bottleCode, false);
+					getBottleWeight(bottleCode);
 					//deleteKP(position);
 					return true;
 				}
 			});
-			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-					//录入钢瓶重量
-					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
-					String bottleCode = bottleCodeTextView.getText().toString();
-					getBottleWeight(bottleCode, true);
-					//deleteZP(position);
-					return true;
-				}
-			});
+			//重瓶现在不需要称重
+//			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
+//
+//				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+//					//录入钢瓶重量
+//					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
+//					String bottleCode = bottleCodeTextView.getText().toString();
+//					getBottleWeight(bottleCode, true);
+//					//deleteZP(position);
+//					return true;
+//				}
+//			});
 
 
 
@@ -367,26 +363,30 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				if(!isBottlesQuantityOK()){//空重瓶交接不符合
 					return;
 				}
-				//createElectDep();
-
+				if(isSpecialOrder){//不间断供气订单，所有空瓶必须称重
+					for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
+						String weight_temp = entry.getValue();
+						if(weight_temp.length()==0||Double.parseDouble(weight_temp)<4){
+							Toast.makeText(BottleExchangeActivity.this, "所有空瓶必须称重，重量错误!",
+ 						Toast.LENGTH_LONG).show();
+							return;
+						}
+					}
+				}
 //				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
 //						Toast.LENGTH_LONG).show();
 //				m_buttonNext.setText("正在提交...");
 //				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.transparent_background));
 //				m_buttonNext.setEnabled(false);
-				//上传瓶号
+				//订单上传瓶号
 				upLoadGasCylinder();
-				//提交钢瓶重量
-				m_updateWeightCount = 0;
-				for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
-					upLoadBottleWeight(entry.getKey(), entry.getValue(), false);
-				}
-				for (Map.Entry<String, String> entry : m_BottlesMapZP.entrySet()) {
-					upLoadBottleWeight(entry.getKey(), entry.getValue(), true);
-				}
+				//订单绑定重瓶号
+				OrdersBindGasCynNumber();
 
+				//评价成功，跳转支付,,测试需要，等会删除
+				handler_old.sendEmptyMessageDelayed(0,1000);
 				//用户评价阶段
-				orderServiceQualityShow();
+				//orderServiceQualityShow();
 
 
 				break;
@@ -528,7 +528,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
 
 			bottleInfo.put("bottleCode", entry.getKey());
-			bottleInfo.put("bottleWeight", entry.getValue());
+			bottleInfo.put("bottleWeight", entry.getValue()+"公斤");
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 		}
 
@@ -679,11 +679,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			super.handleMessage(msg);
 			//不间断供气的订单
 			if(isSpecialOrder){
-				//如果钢瓶重量没有提交完，提示重新提交
-				if(m_updateWeightCount!=(m_BottlesMapKP.size()+m_BottlesMapZP.size())){
-					Toast.makeText(BottleExchangeActivity.this, "钢瓶重量提交失败，请重新提交！", Toast.LENGTH_LONG).show();
-					return;
-				}
 				//将空瓶号传到下一个页面，用于不间断供气计费
 				Set keySet = m_BottlesMapKP.keySet();
 				Iterator iter = keySet.iterator();
@@ -715,10 +710,9 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private void addZP(String bottleCode) {
 
 		if(!m_BottlesMapZP.containsKey(bottleCode)){//第一次扫
-			m_BottlesMapZP.put(bottleCode, "0");
+			m_BottlesMapZP.put(bottleCode, "");
 			refleshBottlesListZP();
 		}
-
 	}
 
 	private String getResponseMessage(HttpResponse response) {
@@ -1228,9 +1222,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	}
 
 
-	private void getBottleWeight(String bottleCode, boolean isZP){
+	private void getBottleWeight(String bottleCode){
 		final String bottleCodeTemp = bottleCode;
-		final boolean isZPTemp = isZP;
 		LayoutInflater inflater = getLayoutInflater();
 		final View layout = inflater.inflate(R.layout.upload_weight,
 				null);
@@ -1245,55 +1238,21 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					{
 						EditText et = (EditText)layout.findViewById(R.id.input_bottleWeight);
 						String weight = et.getText().toString();
-						//更新表单
-						if(isZPTemp){
-							m_BottlesMapZP.put(bottleCodeTemp, weight);
-							refleshBottlesListZP();
+						if(weight.length()==0){
+							Toast.makeText(BottleExchangeActivity.this, "重量输入有误，请重新输入！",
+									Toast.LENGTH_LONG).show();
 						}else{
 							m_BottlesMapKP.put(bottleCodeTemp, weight);
 							refleshBottlesListKP();
 						}
+
+
 					}
 				});
 		builder.setCancelable(false);
 		builder.show();
 	}
 
-	//提交钢瓶重量
-	public void upLoadBottleWeight(String bottleCode, String weight, boolean isZP) {
-		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.PUT);
-		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL+"/"+bottleCode;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		Map<String, Object> body = new HashMap<String, Object>();
-		if(isZP){
-			body.put("fullWeight",weight);//重瓶
-		}else{
-			body.put("emptyWeight",weight);//空瓶
-		}
-
-		nrc.setParams(params);
-		nrc.setBody(body);
-		getServer(new Netcallback() {
-			public void preccess(Object res, boolean flag) {
-				if(flag){
-					HttpResponse response=(HttpResponse)res;
-					if(response!=null){
-						if(response.getStatusLine().getStatusCode()==200){
-							m_updateWeightCount++;
-						}
-					}else {
-						Toast.makeText(BottleExchangeActivity.this, "提交钢瓶重量失败！",
-								Toast.LENGTH_LONG).show();
-					}
-				} else {
-					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
-							Toast.LENGTH_LONG).show();
-				}
-			}
-		}, nrc);
-	}
 
 	//用户卡评价弹窗
 	private void orderServiceQualityShow(){
@@ -1594,11 +1553,8 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 
 		JSONArray detail = createElectDepDetails();
 		if(detail==null){
-			Intent intent = new Intent();
-			//将传过来的任务订单参数传到托盘订单计费页面
-			intent.setClass(BottleExchangeActivity.this, TrayOrderDealActivity.class);
-			intent.putExtras(m_bundle);
-			startActivity(intent);
+			//无电子押金单，直接跳转
+			jumpToOrderDeal();
 			return;
 		}
 		body.put("electDepositDetails",detail);
@@ -1609,11 +1565,8 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 					HttpResponse response=(HttpResponse)res;
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==201){
-							Intent intent = new Intent();
-							//将传过来的任务订单参数传到托盘订单计费页面
-							intent.setClass(BottleExchangeActivity.this, TrayOrderDealActivity.class);
-							intent.putExtras(m_bundle);
-							startActivity(intent);
+							//电子押金单上传后跳转
+							jumpToOrderDeal();
 
 						} else{
 							Toast.makeText(BottleExchangeActivity.this, "电子押金单上传失败，"+getResponseMessage(response)+response.getStatusLine().getStatusCode(),
@@ -1697,6 +1650,76 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 					Toast.LENGTH_LONG).show();
 			return null;
 		}
+	}
+
+	//跳转至订单支付
+	private void jumpToOrderDeal(){
+		//跳转之前上传重瓶号
+		//订单绑定重瓶号
+		Intent intent = new Intent();
+		if(isSpecialOrder){//不间断供气订单
+			intent.setClass(BottleExchangeActivity.this, TrayOrderDealActivity.class);
+
+		}else{//瓶结算订单O
+			intent.setClass(BottleExchangeActivity.this, OrderDealActivity .class);
+		}
+		intent.putExtras(m_bundle);
+		startActivity(intent);
+	}
+
+	//订单关联重瓶号
+	private void OrdersBindGasCynNumber() {
+		//如果没有交接就不上传
+		if(m_BottlesMapZP.size()==0){
+			return ;
+		}
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.PUT);
+
+		nrc.requestUrl = NetUrlConstant.OrderBindGascynnumberURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+
+		params.put("orderSn",m_orderId);
+		String strGasCynNumbers = "";
+		boolean isFirstOne = true;
+		for (Map.Entry<String, String> entry : m_BottlesMapZP.entrySet()) {
+			if (isFirstOne) {
+				isFirstOne = false;
+			}else{
+				strGasCynNumbers+=",";
+			}
+			strGasCynNumbers += entry.getKey();
+
+		}
+		params.put("gasCynNumbers",strGasCynNumbers);//重瓶号上传　
+
+
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							Toast.makeText(BottleExchangeActivity.this, "重瓶绑定订单成功"+response.getStatusLine().getStatusCode(),
+									Toast.LENGTH_LONG).show();
+						}else{
+							Toast.makeText(BottleExchangeActivity.this, "重瓶绑定订单失败"+response.getStatusLine().getStatusCode(),
+									Toast.LENGTH_LONG).show();
+						}
+					}else {
+						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+		return ;
 	}
 
 

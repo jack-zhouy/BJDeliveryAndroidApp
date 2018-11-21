@@ -523,7 +523,7 @@ public class OrderDetailActivity extends BaseActivity implements OnClickListener
 
 
 						}else{
-							Toast.makeText(OrderDetailActivity.this, "抢单失败，"+getResponseMessage(response), Toast.LENGTH_LONG).show();
+							Toast.makeText(OrderDetailActivity.this, getResponseMessage(response), Toast.LENGTH_LONG).show();
 						}
 					}else {
 						Toast.makeText(OrderDetailActivity.this, "未知错误，异常！",

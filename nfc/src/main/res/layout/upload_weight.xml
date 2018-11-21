@@ -33,6 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="10dip"
                 android:background="#00000000"
+                android:inputType="numberDecimal"
                 android:hint="钢瓶重量"
                 android:padding="5dip"
                 android:textSize="16sp" />

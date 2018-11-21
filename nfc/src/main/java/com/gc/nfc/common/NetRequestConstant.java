@@ -12,6 +12,7 @@ public class NetRequestConstant {
 	public  String requestUrl;
 	public  Map<String, Object> body;
 	public  Map<String, Object> params;
+	public boolean isBodyJsonArray = false;
 
 	private HttpRequestType type;
 

@@ -100,7 +100,8 @@ public class AutoLoginActivity extends BaseActivity{
 								user.setDepartmentCode(departmentCode);
 								user.setDepartmentName(departmentName);
 								user.setGroupCode(groupCode);
-								user.setGroupName(groupName);				appContext.setUser(user);
+								user.setGroupName(groupName);
+								appContext.setUser(user);
 								Toast.makeText(AutoLoginActivity.this, "登陆成功！", Toast.LENGTH_LONG).show();
 								setResult(12, data);
 								MediaPlayer music = MediaPlayer.create(AutoLoginActivity.this, R.raw.start_working);

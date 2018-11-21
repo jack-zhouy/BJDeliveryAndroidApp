@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
@@ -56,7 +58,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
-
+import java.text.NumberFormat;
+import com.gc.nfc.domain.RefoundDetail;
+import java.math.RoundingMode;
 
 public class TrayOrderDealActivity extends BaseActivity implements OnClickListener,AbsListView.OnScrollListener  {
 
@@ -85,7 +89,7 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 	private String m_curUserId;//该订单用户
 	private User m_deliveryUser;//配送工
 	public static String m_orderPayStatus;//支付状态
-	private Map<String, String> m_BottlesMapKP;//空瓶表
+	private Map<String, RefoundDetail> m_BottlesMapKP;//获取所有需要进行抵扣的空瓶相关详情
 	private Handler handler = new Handler(){
 		@Override
 		public void handleMessage(Message msg) {
@@ -112,7 +116,7 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 		try {
 			setContentView(R.layout.activity_tray_order_deal);
 			//获取传过来的任务订单参数
-			m_BottlesMapKP = new HashMap<String,String>();
+			m_BottlesMapKP = new HashMap<String,RefoundDetail>();
 			Bundle bundle = new Bundle();
 			bundle = this.getIntent().getExtras();
 			String  strOrder = bundle.getString("order");
@@ -121,13 +125,24 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 			m_orderId = bundle.getString("businessKey");
 			m_totalFee = "";
 
+			//获取订单用户
+			JSONObject customerJson = m_OrderJson.getJSONObject("customer");
+			m_curUserId = customerJson.get("userId").toString();
+
+
+			//获取所有需要进行抵扣的空瓶号
 			Set keySet = bundle.keySet();   // 得到bundle中所有的key
 			Iterator iter = keySet.iterator();
-			while(iter.hasNext())
-			{
+			while(iter.hasNext()) {
 				String key = (String)iter.next();
 				if(key.contains("KMA")){
-					m_BottlesMapKP.put(key, bundle.getString(key));
+					RefoundDetail refoundDetail = new RefoundDetail();
+					refoundDetail.kp_weight = bundle.getString(key);//空瓶称重
+					refoundDetail.forceCaculate = false;
+					refoundDetail.isOK = false;//是否计算成功
+					refoundDetail.isFirst = true;//是否为第一次计算
+					refoundDetail.code = key;//钢瓶编号
+					m_BottlesMapKP.put(key, refoundDetail);
 				}
 			}
 
@@ -155,7 +170,13 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 			swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
 				@Override
 				public void onRefresh() {
-					refleshPayStatus();
+					if(m_BottlesMapKP.size()!=0){
+						//计算订单价格
+						OrderCalculate();
+					}else{//没有退残,以当前订单的支付金额为准
+						refleshPayStatus();
+					}
+
 				}
 			});
 
@@ -169,6 +190,7 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 
 					switch(pos){
 						case 0://扫码
+
 							PayOnScan();
 							break;
 						default:
@@ -180,42 +202,65 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 					// Another interface callback
 				}
 			});
-
 			//获取当前配送工
 			appContext = (AppContext) getApplicationContext();
 			m_deliveryUser = appContext.getUser();
-
-			//数据初始化
-			setOrderAppendInfo();//设置支付状态
 			GetDepLeader();//获取配送工的门店领导
 
-
 			if(m_BottlesMapKP.size()!=0){
-				refleshBottlesMapKP();//刷新空瓶表
 				//计算订单价格
 				OrderCalculate();
+			}else{//没有退残,以当前订单的支付金额为准
+				setOrderAppendInfo(m_OrderJson);
 			}
 
+			//绑定空瓶原始价格输入事件
 
 
+			//初始化两个LISTVIEW的点击事件，目前没有实现交接的回撤
+			m_listView_kp.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+					//录入钢瓶原始价格及充装量
+					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
+					String bottleCode = bottleCodeTextView.getText().toString();
+					RefoundDetail stRefoundDetail = m_BottlesMapKP.get(bottleCode);
+					if(stRefoundDetail.isOK){
+						Toast.makeText(TrayOrderDealActivity.this, "计算完成，无需干预！",
+								Toast.LENGTH_LONG).show();
+					}else{
+						getRefoundNeededParams(bottleCode);
+					}
+
+					//deleteKP(position);
+					return true;
+				}
+			});
 		}catch (JSONException e){
 			Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
 					Toast.LENGTH_LONG).show();
 		}
 	}
 	private void PayOnScan(){
+		//残气计算失败
+		if(!isPayStatus()){
+			Toast.makeText(TrayOrderDealActivity.this, "残气计算还未完成！无法扫码支付",
+					Toast.LENGTH_LONG).show();
+			return;
+		}
 		if(m_totalFee.length()==0){
 			Toast.makeText(TrayOrderDealActivity.this, "计价失败！无法扫码支付",
 					Toast.LENGTH_LONG).show();
 			return;
 		}
+
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
 		View view = View.inflate(this, R.layout.pay_on_scan, null);   // 账号、密码的布局文件，自定义
 		ImageView QRcode = (ImageView)view.findViewById(R.id.items_imageViewScanCode);
 		double dPayMount = Double.parseDouble(m_totalFee)*100;
 		int iPayMount = (int) dPayMount;
-		String  strUri = NetUrlConstant.PAYQRCODEURL+"?totalFee="+iPayMount+"&orderIndex="+m_orderId;
+		String  strUri = NetUrlConstant.PAYQRCODEURL+"?totalFee="+iPayMount+"&orderIndex="+m_orderId+"&userId="+m_deliveryUser.getUsername();
 
 		try {
 			URL link = new URL(strUri);
@@ -271,12 +316,9 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 
 
 
-	//设置订单的支付状态
-	private void setOrderAppendInfo() {
+	//更新订单的支付状态及相关金额
+	private void setOrderAppendInfo(JSONObject orderJson) {
 		try {
-			//获取传过来的任务订单参数
-			JSONObject orderJson = m_OrderJson;
-
 			//支付状态
 			JSONObject payStatusJson = orderJson.getJSONObject("payStatus");
 			String strPayStatus = payStatusJson.get("name").toString();
@@ -345,8 +387,9 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 								JSONObject OrdersJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
 								JSONArray OrdersListJson = OrdersJson.getJSONArray("items");
 								if(OrdersListJson.length()==1){
-									TrayOrderDealActivity.m_orderPayStatus = OrdersListJson.getJSONObject(0).getJSONObject("payStatus").getString("name");//获取订单状态
-									m_textViewPayStatus.setText(TrayOrderDealActivity.m_orderPayStatus);
+									JSONObject OrderJson = OrdersListJson.getJSONObject(0);
+									//更新控件
+									setOrderAppendInfo(OrderJson);
 								}else{
 									return;
 								}
@@ -375,65 +418,65 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 
 	//非气票用户支付
 	private boolean commonUserPay() {
-			// get请求
-			NetRequestConstant nrc = new NetRequestConstant();
-			nrc.setType(HttpRequestType.PUT);
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.PUT);
 
-			nrc.requestUrl = NetUrlConstant.ORDERURL+"/"+m_orderId;
-			nrc.context = this;
-			Map<String, Object> body = new HashMap<String, Object>();
+		nrc.requestUrl = NetUrlConstant.ORDERURL+"/"+m_orderId;
+		nrc.context = this;
+		Map<String, Object> body = new HashMap<String, Object>();
 
-			//如果结算类型是普通用户，就需要提交支付方式参数
-			String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit"};//扫码，现金，赊销
-			body.put("payType",payTypes[m_spinnerPaytype.getSelectedItemPosition()]);//支付方式
-			//如果是扫码，支付状态没有支付就不允许提交订单
-			if(m_spinnerPaytype.getSelectedItemPosition()==0){
-				if(!m_orderPayStatus.equals("已支付")){
-					Toast.makeText(TrayOrderDealActivity.this, "扫码支付结果未返回！",
-							Toast.LENGTH_LONG).show();
-					return false;
-				}
+		//如果结算类型是普通用户，就需要提交支付方式参数
+		String payTypes[] = {"PTOnLine","PTCash","PTDebtCredit","PTWxOffLine"};//扫码，现金，赊销,微信线下扫码
+		body.put("payType",payTypes[m_spinnerPaytype.getSelectedItemPosition()]);//支付方式
+		//如果是扫码，支付状态没有支付就不允许提交订单
+		if(m_spinnerPaytype.getSelectedItemPosition()==0){
+			if(!m_orderPayStatus.equals("已支付")){
+				Toast.makeText(TrayOrderDealActivity.this, "扫码支付结果未返回！",
+						Toast.LENGTH_LONG).show();
+				return false;
 			}
+		}
 
-			//如果是已支付，支付方式只能为扫码
-			if(m_orderPayStatus.equals("已支付")){
-				if(m_spinnerPaytype.getSelectedItemPosition()!=0) {
-					Toast.makeText(TrayOrderDealActivity.this, "订单已经支付，确认支付类型为扫码？",
-							Toast.LENGTH_LONG).show();
-					return false;
-				}
+		//如果是已支付，支付方式只能为扫码
+		if(m_orderPayStatus.equals("已支付")){
+			if(m_spinnerPaytype.getSelectedItemPosition()!=0) {
+				Toast.makeText(TrayOrderDealActivity.this, "订单已经支付，确认支付类型为扫码？",
+						Toast.LENGTH_LONG).show();
+				return false;
 			}
-			body.put("payStatus","PSPaied");// 修改订单状态为已经支付
-			nrc.setBody(body);
-			getServer(new Netcallback() {
-				public void preccess(Object res, boolean flag) {
-					if(flag){
-						HttpResponse response=(HttpResponse)res;
-						if(response!=null){
-							if(response.getStatusLine().getStatusCode()==200){
-								//完成配送
-								deliverOver();
-							}else if(response.getStatusLine().getStatusCode()==404){
-								Toast.makeText(TrayOrderDealActivity.this, "订单不存在",
-										Toast.LENGTH_LONG).show();
-							} else if(response.getStatusLine().getStatusCode()==401){
-								Toast.makeText(TrayOrderDealActivity.this, "鉴权失败，请重新登录"+response.getStatusLine().getStatusCode(),
-										Toast.LENGTH_LONG).show();
-							}else{
-								Toast.makeText(TrayOrderDealActivity.this, "支付失败" + response.getStatusLine().getStatusCode(),
-										Toast.LENGTH_LONG).show();
-							}
-						}else {
-							Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！",
+		}
+		body.put("payStatus","PSPaied");// 修改订单状态为已经支付
+		nrc.setBody(body);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							//完成配送
+							deliverOver();
+						}else if(response.getStatusLine().getStatusCode()==404){
+							Toast.makeText(TrayOrderDealActivity.this, "订单不存在",
+									Toast.LENGTH_LONG).show();
+						} else if(response.getStatusLine().getStatusCode()==401){
+							Toast.makeText(TrayOrderDealActivity.this, "鉴权失败，请重新登录"+response.getStatusLine().getStatusCode(),
+									Toast.LENGTH_LONG).show();
+						}else{
+							Toast.makeText(TrayOrderDealActivity.this, "支付失败" + response.getStatusLine().getStatusCode(),
 									Toast.LENGTH_LONG).show();
 						}
-					} else {
-						Toast.makeText(TrayOrderDealActivity.this, "网络未连接！",
+					}else {
+						Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！",
 								Toast.LENGTH_LONG).show();
 					}
+				} else {
+					Toast.makeText(TrayOrderDealActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
 				}
-			}, nrc);
-			return true;
+			}
+		}, nrc);
+		return true;
 
 
 	}
@@ -552,11 +595,16 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 						Toast.LENGTH_LONG).show();
 				return;
 			}
+			if(!isPayStatus()){
+				Toast.makeText(TrayOrderDealActivity.this, "残气计算还未完成！无法支付",
+						Toast.LENGTH_LONG).show();
+				return;
+			}
 			if(m_orderPayStatus.equals("已支付")){
 				//完成配送
 				deliverOver();
 			}else{
-					commonUserPay();
+				commonUserPay();
 			}
 			m_buttonNext.setText("下一步");
 			m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
@@ -566,14 +614,39 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 	};
 
 
+	@Override
+	public void onPointerCaptureChanged(boolean hasCapture) {
+
+	}
+
 	//NFC更新空瓶表
 	private void refleshBottlesMapKP(){
 		List<Map<String,Object>> list_map = new ArrayList<Map<String,Object>>(); //定义一个适配器对象
-		for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
+		for (Map.Entry<String, RefoundDetail> entry : m_BottlesMapKP.entrySet()) {
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+			RefoundDetail stRefoundDetail = entry.getValue();
+			if(stRefoundDetail.forceCaculate){
+				bottleInfo.put("note", "（干预瓶）:"+stRefoundDetail.note);//备注
 
-			bottleInfo.put("bottleCode", entry.getKey());
-			bottleInfo.put("bottleWeight", entry.getValue());
+			}else{
+				bottleInfo.put("note", "(正常瓶）:"+stRefoundDetail.note);//备注
+
+			}
+			bottleInfo.put("code", stRefoundDetail.code);//钢瓶编号
+			bottleInfo.put("kp_weight", "空瓶重:"+stRefoundDetail.kp_weight);//空瓶称重
+			bottleInfo.put("tare_weight", "瓶皮重:"+stRefoundDetail.tare_weight);//钢瓶皮重
+			bottleInfo.put("canqi_weight", "残气量:"+stRefoundDetail.canqi_weight);//残气重量
+			bottleInfo.put("chongzhuang_weight", "充装量:"+stRefoundDetail.chongzhuang_weight);//充装重量
+			bottleInfo.put("original_price", "购买价:"+stRefoundDetail.original_price);//原购买价格
+			bottleInfo.put("gas_price", "均气价:"+stRefoundDetail.gas_price);//气价元/公斤
+			bottleInfo.put("canqi_price", "退残额:"+stRefoundDetail.canqi_price);//残气金额
+
+			if(stRefoundDetail.isOK){//是否异常
+				bottleInfo.put("icon", R.drawable.icon_bottle);
+			}else{
+				bottleInfo.put("icon", R.drawable.warning);
+			}
+
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 		}
 
@@ -582,34 +655,62 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 				TrayOrderDealActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_tray_pay_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode","bottleWeight"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number,R.id.items_weight}) ;
+				new String[]{"note","icon", "code","kp_weight","tare_weight","canqi_weight","chongzhuang_weight","original_price","gas_price","canqi_price"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_note,R.id.items_imageViewIsOK,R.id.items_number,R.id.items_kpweight,R.id.items_tareweight,R.id.items_canqiweight,
+						R.id.items_chongweight,R.id.items_originalPrice,R.id.items_gasPrice,R.id.items_canqiPrice}) ;
 
 		m_listView_kp.setAdapter(simpleAdapter);
 		setListViewHeightBasedOnChildren(m_listView_kp);
 	}
 	//订单残气计算
 	private void OrderCalculate() {
-		// get请求
 		NetRequestConstant nrc = new NetRequestConstant();
-		nrc.setType(HttpRequestType.GET);
+		try {
+			// get请求
+			nrc.setType(HttpRequestType.PUT);
+			nrc.requestUrl = NetUrlConstant.ORDERCACULATEURL + "/" + m_orderId;
+			nrc.context = this;
+			Map<String, Object> params = new HashMap<String, Object>();
+			params.put("customerId", m_curUserId);
+			nrc.setParams(params);
+//		//构建body
+			Map<String, Object> body = new HashMap<String, Object>();
+			JSONArray refoundDetailJSONArray = new JSONArray();
+			for (Map.Entry<String, RefoundDetail> entry : m_BottlesMapKP.entrySet()) {
+				RefoundDetail refoundDetail = entry.getValue();
+				JSONObject refoundDetailJSONObject = new JSONObject();
+				refoundDetailJSONObject.put("gasCynNumber", refoundDetail.code);//钢瓶号
+				refoundDetailJSONObject.put("refoundWeight", refoundDetail.kp_weight);//回瓶重量
+				if(refoundDetail.isFirst){//第一次不需要强制
+					refoundDetailJSONObject.put("forceCaculate", false);//是否强制计算
+					refoundDetail.isFirst = false;
+				}else{
+					if(refoundDetail.isOK){
+						if(refoundDetail.forceCaculate){//强制完成的还需要强制
+							refoundDetailJSONObject.put("forceCaculate", true);//是否强制计算
+							refoundDetailJSONObject.put("standWeight", refoundDetail.chongzhuang_weight);//钢瓶液化气重量
+							refoundDetailJSONObject.put("dealPrice", refoundDetail.original_price);//该钢瓶上一次成交价格
+						}else{
+							refoundDetailJSONObject.put("forceCaculate", false);//是否强制计算
+						}
 
-		nrc.requestUrl = NetUrlConstant.ORDERCACULATEURL;
-		nrc.context = this;
-		Map<String, Object> params = new HashMap<String, Object>();
-		String bottleNumbers = "";
-		int tempCount = 0;
-		for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
-			if(tempCount!=0){
-				bottleNumbers +=",";
+					}else{//计算不成功，需要强制
+						refoundDetailJSONObject.put("forceCaculate", true);//是否强制计算
+						refoundDetailJSONObject.put("standWeight", refoundDetail.chongzhuang_weight);//钢瓶液化气重量
+						refoundDetailJSONObject.put("dealPrice", refoundDetail.original_price);//该钢瓶上一次成交价格
+					}
+
+				}
+				refoundDetailJSONArray.put(refoundDetailJSONObject);
 			}
-			bottleNumbers += entry.getKey();
-			tempCount++;
+			body.put("jsonArray", refoundDetailJSONArray);
+			nrc.setBody(body);
+			nrc.isBodyJsonArray = true;
+		}catch (JSONException e){
+			Toast.makeText(TrayOrderDealActivity.this, "订单残气计算请求构建失败！"+e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return;
 		}
-
-		params.put("orderSn",m_orderId);
-		params.put("gasCynNumbers", bottleNumbers);
-		nrc.setParams(params);
 		getServer(new Netcallback() {
 			public void preccess(Object res, boolean flag) {
 				if(flag) {
@@ -617,16 +718,39 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 					if (response != null) {
 						if (response.getStatusLine().getStatusCode() == 200) {
 							try {
-								JSONObject orderJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-								String refoundSum = orderJson.getString("refoundSum");
-								String orderAmount = orderJson.getString("orderAmount");
-								String originalAmount = orderJson.getString("originalAmount");
-								JSONObject payStatusJson = orderJson.getJSONObject("payStatus");
+								JSONObject calDetailsJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray calDetailsJSONArray = calDetailsJson.getJSONArray("items");
+								for(int i=0; i<calDetailsJSONArray.length();i++){
+									JSONObject calDetailJSONObject = calDetailsJSONArray.getJSONObject(i);
+									boolean success = calDetailJSONObject.getBoolean("success");
+									String gasCynNumber = calDetailJSONObject.getString("gasCynNumber");//钢瓶号
+									RefoundDetail temp_RefoundDetail = m_BottlesMapKP.get(gasCynNumber);
+									temp_RefoundDetail.note = calDetailJSONObject.getString("note");//备注
 
-								m_textViewTotalFee.setText("￥"+orderAmount);
-								m_textViewOrginalFee.setText("￥"+originalAmount);
-								m_textViewResidualGasFee.setText("￥"+refoundSum);
-								m_totalFee = orderAmount;
+									if(success){//计算成功后获取详情
+										JSONObject gasRefoundDetail = calDetailJSONObject.getJSONObject("gasRefoundDetail");
+										String orderSn = gasRefoundDetail.getString("orderSn");//订单号
+										String dealPrice = DoubleCast(gasRefoundDetail.getDouble("dealPrice"));//成交价格（优惠后）
+										String prevOrder = gasRefoundDetail.getString("prevOrder");//关联订单号
+										String prevGoodsCode = gasRefoundDetail.getString("prevGoodsCode");//关联商品编码
+										temp_RefoundDetail.isOK = true;//是否异常
+										temp_RefoundDetail.kp_weight = DoubleCast(gasRefoundDetail.getDouble("refoundWeight"));//空瓶称重
+										temp_RefoundDetail.tare_weight = DoubleCast(gasRefoundDetail.getDouble("tareWeight"));//钢瓶皮重
+										temp_RefoundDetail.canqi_weight = DoubleCast(gasRefoundDetail.getDouble("remainGas"));//残气重量
+										temp_RefoundDetail.chongzhuang_weight = DoubleCast(gasRefoundDetail.getDouble("standWeight"));//充装重量
+										temp_RefoundDetail.original_price = DoubleCast(gasRefoundDetail.getDouble("dealPrice"));//原购买价格
+										temp_RefoundDetail.gas_price = DoubleCast(gasRefoundDetail.getDouble("unitPrice"));//气价元/公斤
+										temp_RefoundDetail.canqi_price = DoubleCast(gasRefoundDetail.getDouble("refoundSum"));//残气金额
+										temp_RefoundDetail.forceCaculate = gasRefoundDetail.getBoolean("forceCaculate");//是否通过强制计算
+									}else{//计算不成功，将flag置为false
+										temp_RefoundDetail.isOK = false;
+									}
+									m_BottlesMapKP.put(gasCynNumber, temp_RefoundDetail);
+								}
+
+								//TODO
+								refleshBottlesMapKP();//刷新空瓶表
+								refleshPayStatus();//刷新订单状态
 							} catch (JSONException e) {
 								Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！" + e.getMessage(),
 										Toast.LENGTH_LONG).show();
@@ -635,7 +759,9 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 										Toast.LENGTH_LONG).show();
 							}
 						} else {
-							Toast.makeText(TrayOrderDealActivity.this, "订单残气计算失败!",
+							refleshBottlesMapKP();//刷新空瓶表
+							refleshPayStatus();//刷新订单状态
+							Toast.makeText(TrayOrderDealActivity.this, getResponseMessage(response),
 									Toast.LENGTH_LONG).show();
 						}
 					} else {
@@ -646,4 +772,92 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 	}
 
 
+	//输入计算残气需要的参数，原购买金额及充装量
+	private void getRefoundNeededParams(String bottleCode){
+		final String bottleCodeTemp = bottleCode;
+		LayoutInflater inflater = getLayoutInflater();
+		final View layout = inflater.inflate(R.layout.upload_refound_params,
+				null);
+		AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("请输入").setIcon(
+				R.drawable.icon_app).setView(
+				layout).setPositiveButton("确定",
+				new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which)
+					{
+						EditText editTextOriginalPrice = (EditText)layout.findViewById(R.id.input_originalPrice);
+						EditText editTextChongZhuangWeight = (EditText)layout.findViewById(R.id.input_chongzhuangWeight);
+						String OriginalPrice = editTextOriginalPrice.getText().toString();
+						String ChongZhuangWeight = editTextChongZhuangWeight.getText().toString();
+						if(OriginalPrice.length()==0||ChongZhuangWeight.length()==0){
+							Toast.makeText(TrayOrderDealActivity.this, "输入有误，请重新输入！",
+									Toast.LENGTH_LONG).show();
+						}else{
+							RefoundDetail stRefoundDetail = m_BottlesMapKP.get(bottleCodeTemp);
+							stRefoundDetail.original_price = OriginalPrice;
+							stRefoundDetail.chongzhuang_weight = ChongZhuangWeight;
+							m_BottlesMapKP.put(bottleCodeTemp, stRefoundDetail);
+							refleshBottlesMapKP();
+						}
+					}
+				});
+		builder.setCancelable(false);
+		builder.show();
+	}
+
+	//是否可以进行支付
+	private boolean isPayStatus(){
+		boolean isisPayStatusOK = true;
+		for (Map.Entry<String, RefoundDetail> entry : m_BottlesMapKP.entrySet()) {
+			RefoundDetail stRefoundDetail = entry.getValue();
+			if(!stRefoundDetail.isOK){
+				isisPayStatusOK = false;
+				break;
+			}
+		}
+		return isisPayStatusOK;
+	}
+
+
+	private String getResponseMessage(HttpResponse response) {
+		try {
+
+			BufferedReader in = new BufferedReader(new InputStreamReader(response.getEntity()
+					.getContent()));
+			StringBuffer sb = new StringBuffer("");
+			String line = "";
+			String NL = System.getProperty("line.separator");
+			while ((line = in.readLine()) != null) {
+				sb.append(line + NL);
+			}
+			in.close();
+			String responseBody = sb.toString();
+
+			if (responseBody.equals("")) {
+				responseBody = "{\"message\":\"no value\"}";
+			}
+
+			JSONObject errorDetailJson = new JSONObject(responseBody);
+			String errorDetail = errorDetailJson.get("message").toString();
+			return errorDetail;
+		} catch (IOException e) {
+			Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！" + e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return null;
+		} catch (JSONException e) {
+			Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！" + e.getMessage(),
+					Toast.LENGTH_LONG).show();
+			return null;
+		}
+	}
+
+	//保留两位小数，并且四舍五入
+	private String DoubleCast(Double data){
+		NumberFormat nf = NumberFormat.getNumberInstance();
+		// 保留两位小数
+		nf.setMaximumFractionDigits(2);
+		// 如果不需要四舍五入，可以使用RoundingMode.DOWN
+		nf.setRoundingMode(RoundingMode.HALF_UP);
+		return nf.format(data);
+	}
 }

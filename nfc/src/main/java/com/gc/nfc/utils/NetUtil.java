@@ -22,6 +22,7 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import org.apache.http.entity.StringEntity;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -171,14 +172,22 @@ public class NetUtil {
 			//发送请求的参数
 			if(nrc.body!=null){
 				Map<String, Object> body = nrc.body;
-				JSONObject bodyJson = new JSONObject();  ;
-				for(Map.Entry<String, Object> entry : body.entrySet()){
-					bodyJson.put(entry.getKey(), (String) entry.getValue());
+				if(body.size()==1&&nrc.isBodyJsonArray){
+					JSONArray bodyJsonArray = (JSONArray)body.get("jsonArray");
+					StringEntity stringEntity = new StringEntity(bodyJsonArray.toString());
+					stringEntity.setContentType("application/json");
+					httpRequest.setEntity(stringEntity);
+				}else{
+					JSONObject bodyJson = new JSONObject();  ;
+					for(Map.Entry<String, Object> entry : body.entrySet()){
+						bodyJson.put(entry.getKey(), (String) entry.getValue());
+					}
+
+					StringEntity stringEntity = new StringEntity(bodyJson.toString());
+					stringEntity.setContentType("application/json");
+					httpRequest.setEntity(stringEntity);
 				}
 
-				StringEntity stringEntity = new StringEntity(bodyJson.toString());
-				stringEntity.setContentType("application/json");
-				httpRequest.setEntity(stringEntity);
 			}
 
 			//stringEntity.setContentEncoding("UTF-8");

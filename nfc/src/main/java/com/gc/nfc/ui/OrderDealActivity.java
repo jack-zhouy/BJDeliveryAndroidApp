@@ -325,7 +325,7 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 		ImageView QRcode = (ImageView)view.findViewById(R.id.items_imageViewScanCode);
 		double dPayMount = Double.parseDouble(m_totalFee)*100;
 		int iPayMount = (int) dPayMount;
-		String  strUri = NetUrlConstant.PAYQRCODEURL+"?totalFee="+iPayMount+"&orderIndex="+m_businessKey;
+		String  strUri = NetUrlConstant.PAYQRCODEURL+"?totalFee="+iPayMount+"&orderIndex="+m_businessKey+"&userId="+m_deliveryUser;
 
 
 

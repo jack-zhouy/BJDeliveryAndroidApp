@@ -6,30 +6,92 @@
     android:orientation="horizontal" >
 
     <ImageView
-        android:id="@+id/items_imageView1"
-        android:layout_width="40dp"
-        android:layout_height="45dp"
-        android:layout_marginTop="0dp"
+        android:id="@+id/items_imageViewIsOK"
+        android:layout_width="50dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="10dp"
         android:layout_marginLeft="10dp"
-        android:src="@drawable/icon_bottle" />
+        android:src="@drawable/warning" />
     <TextView
         android:id="@+id/items_number"
-        android:layout_width="wrap_content"
+        android:layout_width="150dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="50dp"
+        android:hint="钢瓶编码"
+        android:layout_marginLeft="60dp"
         android:layout_marginTop="10dp"
         android:textColor="@color/textColorPrimary" />
-
+    <TextView
+        android:id="@+id/items_chongweight"
+        android:layout_width="110dp"
+        android:layout_height="wrap_content"
+        android:hint="充装量"
+        android:layout_marginLeft="260dp"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/textColorPrimary" />
 
 
     <TextView
-        android:id="@+id/items_weight"
-        android:layout_width="50dp"
+        android:id="@+id/items_kpweight"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="10dp"
-        android:layout_marginTop="10dp"
+        android:hint="空瓶重"
+        android:layout_marginLeft="60dp"
+        android:layout_marginTop="30dp"
         android:textColor="@color/textColorPrimary" />
 
 
+    <TextView
+        android:id="@+id/items_tareweight"
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:hint="皮重"
+        android:layout_marginLeft="160dp"
+        android:layout_marginTop="30dp"
+        android:textColor="@color/textColorPrimary" />
+
+    <TextView
+        android:id="@+id/items_canqiweight"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:hint="残气重"
+        android:layout_marginLeft="260dp"
+        android:layout_marginTop="30dp"
+        android:textColor="@color/textColorPrimary" />
+
+    <TextView
+        android:id="@+id/items_originalPrice"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:hint="购买价"
+        android:layout_marginLeft="60dp"
+        android:layout_marginTop="50dp"
+        android:textColor="@color/textColorPrimary" />
+
+
+    <TextView
+        android:id="@+id/items_gasPrice"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:hint="气价"
+        android:layout_marginLeft="160dp"
+        android:layout_marginTop="50dp"
+        android:textColor="@color/textColorPrimary" />
+
+    <TextView
+        android:id="@+id/items_canqiPrice"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:hint="退残金额"
+        android:layout_marginLeft="260dp"
+        android:layout_marginTop="50dp"
+        android:textColor="@color/textColorPrimary" />
+
+    <TextView
+        android:id="@+id/items_note"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:hint="备注"
+        android:layout_marginLeft="60dp"
+        android:layout_marginTop="70dp"
+        android:textColor="@color/textColorPrimary" />
 </RelativeLayout>

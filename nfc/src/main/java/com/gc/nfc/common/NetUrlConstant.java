@@ -41,5 +41,6 @@ public class NetUrlConstant {
 	public static final String USERCARDURL = BASEURL+"/api/UserCard";  //用户卡
 	public static final String ElectDepositURL = BASEURL+"/api/ElectDeposit";  //电子押金单
 
+	public static final String OrderBindGascynnumberURL = BASEURL+"/api/Orders/Bind/GasCynNumber";  //5.8.	订单关联钢瓶号
 
 }
