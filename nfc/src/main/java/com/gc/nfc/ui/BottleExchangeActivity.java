@@ -384,9 +384,9 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				OrdersBindGasCynNumber();
 
 				//评价成功，跳转支付,,测试需要，等会删除
-				handler_old.sendEmptyMessageDelayed(0,1000);
+				//handler_old.sendEmptyMessageDelayed(0,1000);
 				//用户评价阶段
-				//orderServiceQualityShow();
+				orderServiceQualityShow();
 
 
 				break;
