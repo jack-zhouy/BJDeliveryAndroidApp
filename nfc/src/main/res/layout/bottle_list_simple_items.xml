@@ -14,9 +14,17 @@
         android:src="@drawable/icon_bottle" />
     <TextView
         android:id="@+id/items_number"
-        android:layout_width="wrap_content"
+        android:layout_width="160dp"
         android:layout_height="wrap_content"
         android:layout_marginLeft="50dp"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/textColorPrimary" />
+
+    <TextView
+        android:id="@+id/items_spec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="210dp"
         android:layout_marginTop="10dp"
         android:textColor="@color/textColorPrimary" />
 

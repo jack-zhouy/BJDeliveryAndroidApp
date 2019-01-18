@@ -148,6 +148,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private Map<String, String> m_BottlesMapKP;//重瓶表
 	private Map<String, String> m_BottlesMapZP;//空瓶表
 
+	private Map<String, String> m_BottlesSpecMap;//钢瓶规格对照表
+
 	private int m_selected_nfc_model;//0--空瓶 1--重瓶
 
 	Bundle m_bundle;//上个activity传过来的参数
@@ -225,6 +227,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_myBottlesMap = new HashMap<String, JSONObject>();
 			m_BottlesMapKP = new HashMap<String,String>();
 			m_BottlesMapZP = new HashMap<String,String>();
+			m_BottlesSpecMap = new HashMap<String,String>();
 			//获取当前配送工
 			appContext = (AppContext) getApplicationContext();
 			m_deliveryUser = appContext.getUser();
@@ -242,23 +245,23 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					//录入钢瓶重量
 					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
 					String bottleCode = bottleCodeTextView.getText().toString();
-					getBottleWeight(bottleCode);
+					getBottleWeight(bottleCode, false);
 					//deleteKP(position);
 					return true;
 				}
 			});
 			//重瓶现在不需要称重
-//			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
-//
-//				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-//					//录入钢瓶重量
-//					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
-//					String bottleCode = bottleCodeTextView.getText().toString();
-//					getBottleWeight(bottleCode, true);
-//					//deleteZP(position);
-//					return true;
-//				}
-//			});
+			m_listView_zp.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+				public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+					//录入钢瓶重量
+					TextView bottleCodeTextView = (TextView)view.findViewById(R.id.items_number);
+					String bottleCode = bottleCodeTextView.getText().toString();
+					getBottleWeight(bottleCode, true);
+					//deleteZP(position);
+					return true;
+				}
+			});
 
 
 
@@ -281,8 +284,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_yjp_quantity_5kg = 0;//押金瓶数量
 			m_yjp_quantity_15kg = 0;//押金瓶数量
 			m_yjp_quantity_50kg = 0;//押金瓶数量
-			m_yjp_ys_total= "";//押金瓶应收金额total
-			m_yjp_ss_total= "";//押金瓶实收金额total
+			m_yjp_ys_total= "0";//押金瓶应收金额total
+			m_yjp_ss_total= "0";//押金瓶实收金额total
 
 
 		}catch (JSONException e){
@@ -527,6 +530,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		for (Map.Entry<String, String> entry : m_BottlesMapKP.entrySet()) {
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
 
+
+			bottleInfo.put("bottleSpec", getSpecName(getBottleSpec(entry.getKey())));
 			bottleInfo.put("bottleCode", entry.getKey());
 			bottleInfo.put("bottleWeight", entry.getValue()+"公斤");
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
@@ -537,8 +542,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				BottleExchangeActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode","bottleWeight"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number,R.id.items_weight}) ;
+				new String[]{"bottleCode","bottleWeight","bottleSpec"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number,R.id.items_weight,R.id.items_spec}) ;
 
 		m_listView_kp.setAdapter(simpleAdapter);
 		setListViewHeightBasedOnChildren(m_listView_kp);
@@ -551,9 +556,15 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 		for (Map.Entry<String, String> entry : m_BottlesMapZP.entrySet()) {
 			Map<String,Object> bottleInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
+			if(getBottleSpec(entry.getKey())==null){
+				bottleInfo.put("bottleSpec", "未知");
+			}else{
+				bottleInfo.put("bottleSpec", getSpecName(getBottleSpec(entry.getKey())));
+			}
+
 
 			bottleInfo.put("bottleCode", entry.getKey());
-			bottleInfo.put("bottleWeight", entry.getValue());
+			bottleInfo.put("bottleWeight", entry.getValue()+"公斤");
 			list_map.add(bottleInfo);   //把这个存放好数据的Map集合放入到list中，这就完成类数据源的准备工作
 		}
 
@@ -562,8 +573,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				BottleExchangeActivity.this,/*传入一个上下文作为参数*/
 				list_map,         /*传入相对应的数据源，这个数据源不仅仅是数据而且还是和界面相耦合的混合体。*/
 				R.layout.bottle_list_simple_items, /*设置具体某个items的布局，需要是新的布局，而不是ListView控件的布局*/
-				new String[]{"bottleCode","bottleWeight"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
-				new int[]{R.id.items_number,R.id.items_weight}) ;
+				new String[]{"bottleCode","bottleWeight","bottleSpec"}, /*传入上面定义的键值对的键名称,会自动根据传入的键找到对应的值*/
+				new int[]{R.id.items_number,R.id.items_weight,R.id.items_spec}) ;
 		m_listView_zp.setAdapter(simpleAdapter);
 		setListViewHeightBasedOnChildren(m_listView_zp);
 	}
@@ -701,6 +712,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 
 	private void addKP(final String bottleCode){
+		//更新规格对照表
+		updateBottleSpec(bottleCode);
 
 		if(!m_BottlesMapKP.containsKey(bottleCode)){//第一次扫
 			m_BottlesMapKP.put(bottleCode, "0");
@@ -708,7 +721,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		}
 	}
 	private void addZP(String bottleCode) {
-
+		//更新规格对照表
+		updateBottleSpec(bottleCode);
 		if(!m_BottlesMapZP.containsKey(bottleCode)){//第一次扫
 			m_BottlesMapZP.put(bottleCode, "");
 			refleshBottlesListZP();
@@ -1222,7 +1236,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	}
 
 
-	private void getBottleWeight(String bottleCode){
+	private void getBottleWeight(String bottleCode, final boolean isZP){
 		final String bottleCodeTemp = bottleCode;
 		LayoutInflater inflater = getLayoutInflater();
 		final View layout = inflater.inflate(R.layout.upload_weight,
@@ -1242,8 +1256,14 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 							Toast.makeText(BottleExchangeActivity.this, "重量输入有误，请重新输入！",
 									Toast.LENGTH_LONG).show();
 						}else{
-							m_BottlesMapKP.put(bottleCodeTemp, weight);
-							refleshBottlesListKP();
+							if(isZP){
+								m_BottlesMapZP.put(bottleCodeTemp, weight);
+								refleshBottlesListZP();
+							}else{
+								m_BottlesMapKP.put(bottleCodeTemp, weight);
+								refleshBottlesListKP();
+							}
+
 						}
 
 
@@ -1487,25 +1507,47 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 	//校验已经交接以及电子押金单的钢瓶数量型号与订单内容是否一致
 	private boolean isBottlesQuantityOK() {
 		try {
-			//获取订单的商品详情
+			//获取订单的钢瓶规格以及数量
 			JSONArray orderDetailList = m_OrderJson.getJSONArray("orderDetailList");
 			Map<String, Integer> goodsMapQuantity = new HashMap<String, Integer>(); //统计每个规格的数量
 			for (int i = 0; i < orderDetailList.length(); i++) {
 				//找出商品规格
 				JSONObject orderDetail = orderDetailList.getJSONObject(i);  // 订单详情单条记录
 				JSONObject goodDetail = orderDetail.getJSONObject("goods");  // 商品详情
-				String goodCode = goodDetail.get("code").toString();
+				JSONObject gasCylinderSpec = goodDetail.getJSONObject("gasCylinderSpec");
+				String gasCylinderCode = gasCylinderSpec.get("code").toString();
 				int tempCount = Integer.parseInt(orderDetail.get("quantity").toString());
-				if(goodsMapQuantity.containsKey(goodCode)){
-					int totalCount = goodsMapQuantity.get(goodCode);
+				if(goodsMapQuantity.containsKey(gasCylinderCode)){
+					int totalCount = goodsMapQuantity.get(gasCylinderCode);
 					totalCount += tempCount;
-					goodsMapQuantity.remove(goodCode);
-					goodsMapQuantity.put(goodCode,totalCount);
+					goodsMapQuantity.remove(gasCylinderCode);
+					goodsMapQuantity.put(gasCylinderCode,totalCount);
 				}else{
-					goodsMapQuantity.put(goodCode,tempCount);
+					goodsMapQuantity.put(gasCylinderCode,tempCount);
 				}
 			}
 
+			for (String key_order_zp : goodsMapQuantity.keySet()) {
+				Integer quantity_order_zp = goodsMapQuantity.get(key_order_zp);
+				Integer quantity_san_zp = 0;
+				for (String key_scan_zp : m_BottlesMapZP.keySet()) {
+					String spec_temp = getBottleSpec(key_scan_zp);
+					if(spec_temp==null){
+						Toast.makeText(BottleExchangeActivity.this, key_scan_zp+"规格请求失败，请退到上个页面重新扫码！",
+								Toast.LENGTH_LONG).show();
+						return false;
+					}
+					//规格一致
+					if(spec_temp.equals(key_order_zp)){
+						quantity_san_zp++;
+					}
+				}
+				if(!quantity_san_zp.equals(quantity_order_zp)){
+					Toast.makeText(BottleExchangeActivity.this, getSpecName(key_order_zp)+"校验"+",重瓶交接数量与订单不符！",
+							Toast.LENGTH_LONG).show();
+					return false;
+				}
+			}
 
 			//订单中的钢瓶数量
 			int iQuantityOrder_total = 0;
@@ -1518,6 +1560,7 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 						Toast.LENGTH_LONG).show();
 				return false;
 			}
+
 			//判断空的交接是否匹配
 			int iQuantityKpJJ_total = m_BottlesMapKP.size()+m_ptp_quantity_5kg+m_ptp_quantity_15kg+m_ptp_quantity_50kg+
 					m_yjp_quantity_5kg+m_yjp_quantity_15kg+m_yjp_quantity_50kg;
@@ -1527,6 +1570,45 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 				show_deposit_slip();
 				return false;
 			}
+
+			//校验电子押金单规格
+			for (String key_order_zp : goodsMapQuantity.keySet()) {
+				Integer quantity_order_zp = goodsMapQuantity.get(key_order_zp);
+				Integer quantity_san_kp = 0;
+				for (String key_scan_zp : m_BottlesMapKP.keySet()) {
+					String spec_temp = getBottleSpec(key_scan_zp);
+					if(spec_temp==null){
+						Toast.makeText(BottleExchangeActivity.this, key_scan_zp+"规格请求失败，请退到上个页面重新扫码！",
+								Toast.LENGTH_LONG).show();
+						return false;
+					}
+					//规格一致
+					if(spec_temp.equals(key_order_zp)){
+						quantity_san_kp++;
+					}
+
+				}
+				Integer total_get_kp = quantity_san_kp;
+				if(key_order_zp.equals("0001")){//5公斤
+					total_get_kp = (total_get_kp+m_ptp_quantity_5kg+m_yjp_quantity_5kg);
+				}else if(key_order_zp.equals("0002")){//15公斤
+					total_get_kp = (total_get_kp+m_ptp_quantity_15kg+m_yjp_quantity_15kg);
+				}else if(key_order_zp.equals("0003")){//50公斤
+					total_get_kp = (total_get_kp+m_ptp_quantity_50kg+m_yjp_quantity_50kg);
+				}else{
+					Toast.makeText(BottleExchangeActivity.this, "未知钢瓶规格"+key_order_zp,
+							Toast.LENGTH_LONG).show();
+					return  false;
+				}
+
+				if(!total_get_kp.equals(quantity_order_zp)){
+					Toast.makeText(BottleExchangeActivity.this, getSpecName(key_order_zp)+"校验"+",(空瓶交接数量+电子押金单)与订单不符！",
+							Toast.LENGTH_LONG).show();
+					show_deposit_slip();
+					return false;
+				}
+			}
+
 
 		}catch (JSONException e){
 			Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！"+e.getMessage(),
@@ -1663,6 +1745,9 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 		}else{//瓶结算订单O
 			intent.setClass(BottleExchangeActivity.this, OrderDealActivity .class);
 		}
+		//加上押金单参数
+		m_bundle.putString("YJD_YS",m_yjp_ys_total);
+		m_bundle.putString("YJD_SS",m_yjp_ss_total);
 		intent.putExtras(m_bundle);
 		startActivity(intent);
 	}
@@ -1721,6 +1806,84 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 		}, nrc);
 		return ;
 	}
+
+
+	public void updateBottleSpec(final String bottleCode) {
+		// get请求
+		NetRequestConstant nrc = new NetRequestConstant();
+		nrc.setType(HttpRequestType.GET);
+
+		nrc.requestUrl = NetUrlConstant.GASCYLINDERURL;
+		nrc.context = this;
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("number",bottleCode);
+		nrc.setParams(params);
+		getServer(new Netcallback() {
+			public void preccess(Object res, boolean flag) {
+				if(flag){
+					HttpResponse response=(HttpResponse)res;
+					if(response!=null){
+						if(response.getStatusLine().getStatusCode()==200){
+							try {
+								JSONObject bottlesJson = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
+								JSONArray bottlesListJson = bottlesJson.getJSONArray("items");
+								JSONObject bottleJson = bottlesListJson.getJSONObject(0);  //
+								JSONObject specJson = bottleJson.getJSONObject("spec");
+								String specCode = specJson.get("code").toString();//钢瓶规格
+								m_BottlesSpecMap.put(bottleCode, specCode);
+								refleshBottlesListZP();
+								refleshBottlesListKP();
+							}catch (IOException e){
+								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+										Toast.LENGTH_LONG).show();
+							}catch (JSONException e) {
+								Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+										Toast.LENGTH_LONG).show();
+							}
+						}
+					}else {
+						Toast.makeText(BottleExchangeActivity.this, "未知错误，异常！",
+								Toast.LENGTH_LONG).show();
+					}
+				} else {
+					Toast.makeText(BottleExchangeActivity.this, "网络未连接！",
+							Toast.LENGTH_LONG).show();
+				}
+			}
+		}, nrc);
+
+	}
+
+	public String getBottleSpec(final String bottleCode)
+	{
+		if(m_BottlesSpecMap.containsKey(bottleCode)){
+			return m_BottlesSpecMap.get(bottleCode);
+		}else{
+			return null;
+		}
+	}
+
+	public String getSpecName(String specCode)
+	{
+		String specName = "";
+		if(specCode==null){
+			return specName;
+		}
+
+		if(specCode.equals("0001")){//5公斤
+			specName = "5公斤";
+		}else if(specCode.equals("0002")){//15公斤
+			specName = "15公斤";
+		}else if(specCode.equals("0003")){//50公斤
+			specName = "50公斤";
+		}else{
+			Toast.makeText(BottleExchangeActivity.this, "未知钢瓶规格"+specCode,
+					Toast.LENGTH_LONG).show();
+			return  null;
+		}
+		return specName;
+	}
+
 
 
 }

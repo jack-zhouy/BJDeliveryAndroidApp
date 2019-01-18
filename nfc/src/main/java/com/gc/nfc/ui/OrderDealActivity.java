@@ -138,6 +138,8 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 	private boolean m_isMonthDealUser; //是否是月结用户
 
 	private boolean m_isCommonUser; //是否是普通用户
+	private String m_yjss; //押金实收
+	private String m_yjys; //押金应收
 
 
 	private Handler handler = new Handler(){
@@ -185,6 +187,12 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 			m_taskId = bundle.getString("taskId");
 			m_businessKey = bundle.getString("businessKey");
 
+
+			//押金显示
+			m_yjys = bundle.getString("YJD_YS");
+			m_yjss = bundle.getString("YJD_SS");
+
+			((TextView) findViewById(R.id.textview_YJSSFee)).setText(m_yjss+"元 (现金或门店二维码收取)");
 			//控件初始化
 			m_buttonNext = (Button) findViewById(R.id.button_next);//下一步按钮
 			m_textViewPayStatus = (TextView) findViewById(R.id.textview_payStatus);
@@ -900,15 +908,16 @@ public class OrderDealActivity extends BaseActivity implements OnClickListener,A
 				//找出商品规格
 				JSONObject orderDetail = orderDetailList.getJSONObject(i);  // 订单详情单条记录
 				JSONObject goodDetail = orderDetail.getJSONObject("goods");  // 商品详情
-				String goodCode = goodDetail.get("code").toString();
+				JSONObject gasCylinderSpec = goodDetail.getJSONObject("gasCylinderSpec");
+				String gasCylinderCode = gasCylinderSpec.get("code").toString();
 				int tempCount = Integer.parseInt(orderDetail.get("quantity").toString());
-				if(goodsMapQuantity.containsKey(goodCode)){
-					int totalCount = goodsMapQuantity.get(goodCode);
+				if(goodsMapQuantity.containsKey(gasCylinderCode)){
+					int totalCount = goodsMapQuantity.get(gasCylinderCode);
 					totalCount += tempCount;
-					goodsMapQuantity.remove(goodCode);
-					goodsMapQuantity.put(goodCode,totalCount);
+					goodsMapQuantity.remove(gasCylinderCode);
+					goodsMapQuantity.put(gasCylinderCode,totalCount);
 				}else{
-					goodsMapQuantity.put(goodCode,tempCount);
+					goodsMapQuantity.put(gasCylinderCode,tempCount);
 				}
 			}
 			Map<String, Integer> ticketCouponMapQuantity = new HashMap<String, Integer>(); //统计优惠券、气票总和每个规格的数量

@@ -107,7 +107,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="com.android.support.test:exposed-instrumentation-api-publish-0.5" level="project" />
     <orderEntry type="library" name="com.android.support:support-media-compat-26.0.1" level="project" />
-    <orderEntry type="library" name="com.aliyun.ams:alicloud-android-ut:5.1.0@jar" level="project" />
+    <orderEntry type="library" name="com.aliyun.ams:alicloud-android-ut:5.3.0@jar" level="project" />
     <orderEntry type="library" scope="TEST" name="junit:junit:4.12@jar" level="project" />
     <orderEntry type="library" name="com.aliyun.ams:alicloud-android-utdid:1.1.5.3@jar" level="project" />
     <orderEntry type="library" name="com.google.zxing:core:3.2.1@jar" level="project" />
