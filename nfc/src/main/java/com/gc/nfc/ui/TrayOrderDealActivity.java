@@ -71,6 +71,9 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 	private TextView m_textViewPaytype; //支付类型
 	private TextView m_textViewTotalFee; //商品总价
 	private TextView m_textViewOrginalFee; //商品原价
+	private TextView m_textViewCouponAmount; //优惠金额
+
+
 	private TextView m_textViewResidualGasFee; //残气价格
 
 
@@ -154,6 +157,9 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 			m_textViewPaytype = (TextView) findViewById(R.id.textview_payType);
 			m_textViewTotalFee = (TextView) findViewById(R.id.textview_totalFee);
 			m_textViewOrginalFee = (TextView) findViewById(R.id.textview_orginalFee);
+			m_textViewCouponAmount = (TextView) findViewById(R.id.textview_couponAmount);
+
+
 			m_textViewResidualGasFee = (TextView) findViewById(R.id.textview_residualGasFee);
 			m_listView_kp = (ListView) findViewById(R.id.listview_kp);
 			//获取支付状态
@@ -324,14 +330,17 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 			String strPayStatus = payStatusJson.get("name").toString();
 			m_textViewPayStatus.setText(strPayStatus);
 
-			String refoundSum = orderJson.getString("refoundSum");
-			String orderAmount = orderJson.getString("orderAmount");
-			String originalAmount = orderJson.getString("originalAmount");
+			Double refoundSum = orderJson.getDouble("refoundSum");
+			Double orderAmount = orderJson.getDouble("orderAmount");
+			Double originalAmount = orderJson.getDouble("originalAmount");
 
-			m_textViewTotalFee.setText("￥"+orderAmount);
-			m_textViewOrginalFee.setText("￥"+originalAmount);
-			m_textViewResidualGasFee.setText("￥"+refoundSum);
-			m_totalFee = orderAmount;
+			Double counponMount = originalAmount-orderAmount-refoundSum;
+			m_textViewCouponAmount.setText("￥"+String.format("%.2f", counponMount));
+
+			m_textViewTotalFee.setText("￥"+String.format("%.2f", orderAmount));
+			m_textViewOrginalFee.setText("￥"+String.format("%.2f", originalAmount));
+			m_textViewResidualGasFee.setText("￥"+String.format("%.2f", refoundSum));
+			m_totalFee = String.format("%.2f", orderAmount);
 
 		}catch (JSONException e){
 			Toast.makeText(TrayOrderDealActivity.this, "未知错误，异常！"+e.getMessage(),
@@ -593,11 +602,17 @@ public class TrayOrderDealActivity extends BaseActivity implements OnClickListen
 			if(m_depLeader==null){
 				Toast.makeText(TrayOrderDealActivity.this, "所属店长查询失败！",
 						Toast.LENGTH_LONG).show();
+				m_buttonNext.setText("下一步");
+				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+				m_buttonNext.setEnabled(true);
 				return;
 			}
 			if(!isPayStatus()){
 				Toast.makeText(TrayOrderDealActivity.this, "残气计算还未完成！无法支付",
 						Toast.LENGTH_LONG).show();
+				m_buttonNext.setText("下一步");
+				m_buttonNext.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
+				m_buttonNext.setEnabled(true);
 				return;
 			}
 			if(m_orderPayStatus.equals("已支付")){

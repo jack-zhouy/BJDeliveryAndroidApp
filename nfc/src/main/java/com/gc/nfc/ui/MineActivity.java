@@ -51,6 +51,7 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 	private LinearLayout lL_mySetting;//设置
 	private LinearLayout lL_bottleRecycle;//空瓶回收
 	private LinearLayout lL_myLogout;//退出登录
+	private LinearLayout lL_mapView;//查看地图
 
 	private TextView textview_username;
 
@@ -117,7 +118,10 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 				intent = new Intent(MineActivity.this, BottleRecycleActivity.class);
 				startActivity(intent);
 				break;
-
+			case R.id.lL_mapView:// 查看地图
+				intent = new Intent(MineActivity.this, MapViewActivity.class);
+				startActivity(intent);
+				break;
 			default:
 				break;
 		}
@@ -133,6 +137,7 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		lL_myLogout = (LinearLayout) findViewById(R.id.lL_myLogout);//退出登录
 		imageView_userQRcode  = (ImageView) findViewById(R.id.imageView_userQRcode);//二维码用户身份
 		lL_bottleRecycle = (LinearLayout) findViewById(R.id.lL_recycle);//空瓶回收
+		lL_mapView = (LinearLayout) findViewById(R.id.lL_mapView);//空瓶回收
 
 
 		textview_username = (TextView) findViewById(R.id.textview_username);
@@ -144,8 +149,7 @@ public class MineActivity extends BaseActivity implements OnClickListener {
 		lL_myLogout.setOnClickListener(this);
 		lL_bottleRecycle.setOnClickListener(this);
 		imageView_userQRcode.setOnClickListener(this);
-
-
+		lL_mapView.setOnClickListener(this);
 
 	}
 

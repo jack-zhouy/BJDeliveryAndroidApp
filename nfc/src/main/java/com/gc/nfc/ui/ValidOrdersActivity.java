@@ -184,7 +184,7 @@ public class ValidOrdersActivity extends BaseActivity implements OnClickListener
                                     //=================
                                     Map<String,Object> orderInfo = new HashMap<String, Object>(); //创建一个键值对的Map集合，用来存放名字和头像
                                     if(isSpecialOrder){
-                                        orderInfo.put("orderSn", "(托盘)订单编号："+order.get("orderSn").toString());  //订单编号
+                                        orderInfo.put("orderSn", "(按斤)订单编号："+order.get("orderSn").toString());  //订单编号
                                     }else{
                                         orderInfo.put("orderSn", "(普通)订单编号："+order.get("orderSn").toString());  //订单编号
                                     }

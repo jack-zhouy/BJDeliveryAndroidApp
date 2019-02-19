@@ -204,7 +204,7 @@
         <activity android:name=".ui.TrayOrderDealActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop"
-            android:label="托盘订单支付"/>
+            android:label="按斤订单支付"/>
         <activity android:name=".ui.DiaoBoActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop"
@@ -227,7 +227,11 @@
             android:launchMode="singleTop"
             android:label="系统版本"/>
 
-
+        <activity
+            android:name=".ui.MapViewActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:label="查看地图"/>
 
         <activity android:name=".ui.RunAppActivity"
             android:launchMode="singleTop"

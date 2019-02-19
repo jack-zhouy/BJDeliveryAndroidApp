@@ -139,6 +139,7 @@ public class AmapLocationService extends Service {
 		//初始化AMapLocationClientOption对象
 		mLocationOption = getDefaultOption();
 
+
 		netHandler.sendEmptyMessageDelayed(0x99,10000);
 
 		getPosition();
@@ -301,12 +302,15 @@ public class AmapLocationService extends Service {
 
 			httpRequest.setEntity(stringEntity);
 
+
+
 			//发送请求并等待响应
 			HttpResponse httpResponse=httpClient.execute(httpRequest);
 			if(httpResponse.getStatusLine().getStatusCode()!=200){
 				mMediaPlayer.start();
+				//Toast.makeText(this, m_userId+"1上报位置"+location.longitude+","+location.latitude+"|"+httpResponse.getStatusLine().getStatusCode()+"|"+requestUrl, Toast.LENGTH_LONG).show();
 			}else{
-
+				//Toast.makeText(this, m_userId+"2上报位置"+location.longitude+","+location.latitude, Toast.LENGTH_LONG).show();
 			}
 
 			JSONObject bodyJsona = new JSONObject();  ;
