@@ -1,5 +1,6 @@
 package com.gc.nfc.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
@@ -47,6 +48,8 @@ import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.dk.weightScale.scalerSDK;
 import com.gc.nfc.R;
 import com.gc.nfc.app.AppContext;
 import com.gc.nfc.common.NetRequestConstant;
@@ -103,11 +106,19 @@ import android.text.Editable;
 
 
 public class BottleExchangeActivity extends BaseActivity implements OnClickListener  {
+
+	private View layout_inputWeight;
+	private scalerSDK scale;//蓝牙秤
 	BleNfcDeviceService mBleNfcDeviceService;
 	private BleNfcDevice bleNfcDevice;
 	private Scanner mScanner;
 	private ImageView m_imageViewSearchBlue = null;
-	private EditText msgText = null;
+	private ImageView m_imageView_search_weightDevice = null;
+
+	private TextView msgText = null;
+	private TextView msgText_weightDevice = null;
+
+
 	private ProgressDialog readWriteDialog = null;
 
 	private StringBuffer msgBuffer;
@@ -180,6 +191,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	private String m_yjp_ys_total;//押金瓶应收金额total
 	private String m_yjp_ss_total;//押金瓶实收金额total
 
+	private Handler handler_weightScale = new Handler();
+
 
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
@@ -212,6 +225,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_bottleIdZPEditText = (EditText) findViewById(R.id.input_bottleIdZP);
 			m_imageAddKPManual = (ImageView) findViewById(R.id.imageView_addKPManual);
 			m_imageAddZPManual = (ImageView) findViewById(R.id.imageView_addZPManual);
+
+			msgText_weightDevice = (TextView)findViewById(R.id.msgText_weightDevice);
+
+		m_imageView_search_weightDevice= (ImageView) findViewById(R.id.imageView_search_weightDevice);
+		m_imageView_search_weightDevice.setOnClickListener(this);
 
 
 			m_imageViewZPEye.setOnClickListener(this);
@@ -263,6 +281,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				}
 			});
 
+//蓝牙秤初始化
+			scale=new scalerSDK(this);
+			handler_weightScale.post(task);
+			layout_inputWeight = null;
+
 
 
 
@@ -286,6 +309,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 			m_yjp_quantity_50kg = 0;//押金瓶数量
 			m_yjp_ys_total= "0";//押金瓶应收金额total
 			m_yjp_ss_total= "0";//押金瓶实收金额total
+
+
 
 
 		}catch (JSONException e){
@@ -362,6 +387,11 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 
 	public void onClick(View v) {
 		switch (v.getId()) {
+			case R.id.imageView_search_weightDevice://蓝牙秤归0
+				if(scale!=null&&scale.getDevicelist().size()==1){
+					scale.bleSend(scale.getDevicelist().get(0), (byte) 1);
+				}
+				break;
 			case R.id.button_next:
 				if(!isBottlesQuantityOK()){//空重瓶交接不符合
 					return;
@@ -387,7 +417,6 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 				OrdersBindGasCynNumber();
 
 				//评价成功，跳转支付,,测试需要，等会删除
-				//handler_old.sendEmptyMessageDelayed(0,1000);
 				//用户评价阶段
 				orderServiceQualityShow();
 
@@ -762,7 +791,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 	}
 
 	private void blueDeviceInitial(){
-		msgText = (EditText)findViewById(R.id.msgText);
+		msgText = (TextView)findViewById(R.id.msgText);
 		m_imageViewSearchBlue= (ImageView) findViewById(R.id.imageView_search);
 		m_imageViewSearchBlue.setOnClickListener(new StartSearchButtonListener());
 		msgBuffer = new StringBuffer();
@@ -1241,6 +1270,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		LayoutInflater inflater = getLayoutInflater();
 		final View layout = inflater.inflate(R.layout.upload_weight,
 				null);
+
+		layout_inputWeight = layout;//打开输入窗口
 		AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("请输入").setIcon(
 				R.drawable.icon_app).setView(
 				layout).setPositiveButton("确定",
@@ -1265,6 +1296,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 							}
 
 						}
+						//关闭输入窗口
+						layout_inputWeight = null;
 
 
 					}
@@ -1533,7 +1566,8 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 				for (String key_scan_zp : m_BottlesMapZP.keySet()) {
 					String spec_temp = getBottleSpec(key_scan_zp);
 					if(spec_temp==null){
-						Toast.makeText(BottleExchangeActivity.this, key_scan_zp+"规格请求失败，请退到上个页面重新扫码！",
+						updateBottleSpec(key_scan_zp);//重新请求规格
+						Toast.makeText(BottleExchangeActivity.this, key_scan_zp+"规格请求失败，1秒后再次提交！",
 								Toast.LENGTH_LONG).show();
 						return false;
 					}
@@ -1578,7 +1612,8 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 				for (String key_scan_zp : m_BottlesMapKP.keySet()) {
 					String spec_temp = getBottleSpec(key_scan_zp);
 					if(spec_temp==null){
-						Toast.makeText(BottleExchangeActivity.this, key_scan_zp+"规格请求失败，请退到上个页面重新扫码！",
+						updateBottleSpec(key_scan_zp);//重新请求规格
+						Toast.makeText(BottleExchangeActivity.this, key_scan_zp+"规格请求失败，1秒后再次提交！",
 								Toast.LENGTH_LONG).show();
 						return false;
 					}
@@ -1884,6 +1919,35 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 		return specName;
 	}
 
+//蓝牙秤连接
 
+	private Runnable task =new Runnable() {
+		public void run() {
+			handler_weightScale.postDelayed(this,150);
+			if(!scale.bleIsEnabled())
+			{
+
+				return;
+			}
+			scale.Scan(true);
+			scale.updatelist();
+			if(scale.getDevicelist().isEmpty()!=true)
+			{
+				if(scale.getDevicelist().size()!=1){
+					msgText_weightDevice.setText("多台蓝牙秤冲突！");
+				}else {
+					msgText_weightDevice.setText("连接正常！");
+					float weight = scale.getDevicelist().get(0).scalevalue;
+					if(layout_inputWeight!=null)
+					{
+						EditText et = (EditText) layout_inputWeight.findViewById(R.id.input_bottleWeight);
+						et.setText(String.format("%4.1f",weight));
+					}
+				}
+			}else{
+				msgText_weightDevice.setText("未连接！");
+			}
+		}
+	};
 
 }

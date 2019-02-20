@@ -19,7 +19,7 @@
             android:orientation="vertical">
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="30dp"
                 android:background="@color/colorPrimary"
                 android:orientation="horizontal" >
                 <TextView
@@ -28,30 +28,62 @@
                     android:layout_gravity="center"
                     android:layout_marginLeft="16dp"
                     android:layout_weight="1"
-                    android:text="钢瓶交接"
+                    android:text="读卡器状态"
                     android:textColor="@color/white"
                     android:textSize="20sp" />
-                <EditText
+                <TextView
                     android:id="@+id/msgText"
-                    android:editable="false"
+                    android:text="读卡器状态"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="3"
-                    android:text=""
-                    android:textColor="@color/white"
-                    android:textSize="15sp" />
+                    android:textColor="@color/colorAccent"
+                    android:textSize="18sp" />
                 <ImageView
                     android:id="@+id/imageView_search"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_alignParentRight="true"
                     android:layout_marginRight="10dp"
-                    android:layout_marginTop="10dp"
+
                     android:src="@drawable/abs__menu_dropdown_panel_holo_light" />
             </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"
+                android:layout_height="30dp"
+                android:background="@color/colorPrimary"
+                android:orientation="horizontal" >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="16dp"
+                    android:layout_weight="1"
+                    android:text="蓝牙秤状态"
+                    android:textColor="@color/white"
+                    android:textSize="20sp" />
+                <TextView
+                    android:id="@+id/msgText_weightDevice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="3"
+                    android:text="蓝牙秤状态"
+                    android:textColor="@color/colorAccent"
+                    android:textSize="18sp" />
+                <ImageView
+                    android:id="@+id/imageView_search_weightDevice"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginRight="10dp"
+
+                    android:src="@drawable/abs__menu_dropdown_panel_holo_light" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_marginTop="10dp"
                 android:layout_height="40dp"
                 android:orientation="horizontal" >
                 <RadioGroup

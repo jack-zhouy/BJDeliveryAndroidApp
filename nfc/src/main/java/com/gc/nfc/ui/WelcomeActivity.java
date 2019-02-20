@@ -28,12 +28,15 @@ public class WelcomeActivity extends Activity {
         /**全屏设置，隐藏窗口所有装饰**/
         requestWindowFeature(Window.FEATURE_NO_TITLE);// 取消标题栏
         setContentView(R.layout.welcome_page);
-        handler.sendEmptyMessageDelayed(0,3000);
+        handler.sendEmptyMessageDelayed(0,2000);
     }
 
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
+
+
+
             getHome();
             super.handleMessage(msg);
         }
