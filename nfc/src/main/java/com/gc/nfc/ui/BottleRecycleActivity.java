@@ -93,7 +93,8 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 	private int lastRssi = -100;
 	//=========================
 
-
+	private  RadioGroup  radioGroup_nfc=null;
+	private  RadioButton  radioButton_kp_recyle,radioButton_zp_recyle,radioButton_zp_reput;//nfc空瓶/重瓶录入
 
 	private RelativeLayout m_relativeLayout_san;//用户卡扫码窗口
 	private TextView m_textViewUserInfo;// 客户信息
@@ -119,6 +120,8 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 	 * 暂停Activity，界面获取焦点，按钮可以点击
 	 */
 
+	private int m_selected_nfc_model;//0--空瓶回收 1--重瓶回收 2--重瓶落户
+
 
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
@@ -137,6 +140,11 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 		m_textViewTotalCountKP = (TextView) findViewById(R.id.items_totalCountKP);
 		m_textViewUserInfo = (TextView) findViewById(R.id.textView_userInfo);
 		m_relativeLayout_san = (RelativeLayout) findViewById(R.id.RelativeLayout_san);
+
+		radioGroup_nfc=(RadioGroup)findViewById(R.id.radioGroup_nfc_id);
+		radioButton_kp_recyle=(RadioButton)findViewById(R.id.radioButton_kp_recyle);
+		radioButton_zp_recyle=(RadioButton)findViewById(R.id.radioButton_zp_recyle);
+		radioButton_zp_reput=(RadioButton)findViewById(R.id.radioButton_zp_reput);
 
 		m_imageViewKPEye.setOnClickListener(this);
 		m_buttonNext.setOnClickListener(this);
@@ -162,9 +170,30 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 		blueDeviceInitial();
 		//默认刚开始是录钢瓶阶段
 		m_orderServiceQualityShowFlag = false;
+
+
+		radioGroup_nfc.setOnCheckedChangeListener(listen);
+		radioGroup_nfc.check(radioButton_kp_recyle.getId());//默认是空瓶
 	}
 
-
+	private OnCheckedChangeListener  listen=new OnCheckedChangeListener() {
+		@Override
+		public void onCheckedChanged(RadioGroup group, int checkedId) {
+			int id= group.getCheckedRadioButtonId();
+			switch (group.getCheckedRadioButtonId()) {
+				case R.id.radioButton_kp_recyle:
+					m_selected_nfc_model = 0;
+					break;
+				case R.id.radioButton_zp_recyle:
+					m_selected_nfc_model = 1;
+					break;
+				case R.id.radioButton_zp_reput:
+					m_selected_nfc_model = 2;
+					break;
+				default:
+					break;
+			}
+		}};
 	//动态设置ListView的高度
 	private void setListViewHeightBasedOnChildren(ListView listView) {
 		if (listView == null) {
@@ -241,7 +270,7 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 
 
 	//单个钢瓶交接
-	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP) {
+	public void bottleTakeOverUnit(final String bottleCode, final String srcUserId, final String targetUserId, final String serviceStatus, final String note, final boolean enableForce, final boolean isKP, final boolean isChangeFillingStatus,final String takeReason) {
 
 
 		//如果存在交接记录表里，就提示已经存在了
@@ -277,7 +306,7 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 						if(response.getStatusLine().getStatusCode()==200){
 							MediaPlayer music = MediaPlayer.create(BottleRecycleActivity.this, R.raw.nfcok);
 							music.start();
-							addKP(bottleCode);
+							addKP(bottleCode, takeReason);
 
 						}else{
 							MediaPlayer music = MediaPlayer.create(BottleRecycleActivity.this, R.raw.alarm);
@@ -295,7 +324,7 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 																		int which)
 													{
 														//强制交接
-														bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP);
+														bottleTakeOverUnit(bottleCode, srcUserId, targetUserId, serviceStatus, note, true, isKP, isChangeFillingStatus,takeReason);
 													}
 												})
 										.setNegativeButton("取消",
@@ -332,10 +361,10 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 		}, nrc);
 	}
 
-	private void addKP(final String bottleCode){
+	private void addKP(final String bottleCode,final String takeReason ){
 
 		if(!m_BottlesMapKP.containsKey(bottleCode)){//第一次扫
-			m_BottlesMapKP.put(bottleCode, "0");
+			m_BottlesMapKP.put(bottleCode, takeReason);
 			refleshBottlesListKP();
 		}
 	}
@@ -743,7 +772,20 @@ public class BottleRecycleActivity extends BaseActivity implements OnClickListen
 						showToast("无效钢瓶码格式！");
 						return;
 					}
-					bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", "无订单流程"+"|空瓶回收", false, true);//空瓶回收
+					switch (m_selected_nfc_model)
+					{
+						case 0:
+							bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", "退换货流程"+"|空瓶回收", false, true, true, "空瓶回收");//空瓶回收
+							break;
+						case 1:
+							bottleTakeOverUnit(bottleCode, m_curUserId, m_deliveryUser.getUsername(), "6", "退换货流程"+"|重瓶回收", false, true, false, "重瓶回收");//重瓶回收
+							break;
+						case 2:
+							bottleTakeOverUnit(bottleCode, m_deliveryUser.getUsername(), m_curUserId, "5", "退换货流程"+"|重瓶落户", false, true, true, "重瓶落户");//重瓶落户
+							break;
+							default:
+								break;
+					}
 					break;
 				case 0x89://扫描用户卡
 					String readText = msg.obj.toString();

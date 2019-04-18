@@ -515,7 +515,18 @@ public class MainlyActivity extends TabActivity implements OnClickListener {
 	private void initialCloudPushService() {
 		mPushService = PushServiceFactory.getCloudPushService();
 		turnOnPush();//打开推送通道
-		addAlias(m_userId);
+		mPushService.removeAlias(null,new CommonCallback() {
+			@Override
+			public void onSuccess(String s) {
+				System.out.print("删除别名：ok");
+				addAlias(m_userId);
+			}
+			@Override
+			public void onFailed(String errorCode, String errorMsg) {
+				System.out.print("删除别名：failed");
+				addAlias(m_userId);
+			}
+		});
 		setCusNotifSound();
 	}
 

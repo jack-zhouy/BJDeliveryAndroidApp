@@ -405,6 +405,14 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 							return;
 						}
 					}
+					for (Map.Entry<String, String> entry : m_BottlesMapZP.entrySet()) {
+						String weight_temp = entry.getValue();
+						if(weight_temp.length()==0||Double.parseDouble(weight_temp)<4){
+							Toast.makeText(BottleExchangeActivity.this, "所有重瓶必须称重，重量错误!",
+									Toast.LENGTH_LONG).show();
+							return;
+						}
+					}
 				}
 //				Toast.makeText(BottleExchangeActivity.this, "正在提交，请稍等。。。",
 //						Toast.LENGTH_LONG).show();
@@ -413,12 +421,9 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 //				m_buttonNext.setEnabled(false);
 				//订单上传瓶号
 				upLoadGasCylinder();
-				//订单绑定重瓶号
-				OrdersBindGasCynNumber();
 
-				//评价成功，跳转支付,,测试需要，等会删除
-				//用户评价阶段
-				orderServiceQualityShow();
+
+
 
 
 				break;
@@ -753,7 +758,7 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 		//更新规格对照表
 		updateBottleSpec(bottleCode);
 		if(!m_BottlesMapZP.containsKey(bottleCode)){//第一次扫
-			m_BottlesMapZP.put(bottleCode, "");
+			m_BottlesMapZP.put(bottleCode, "0");
 			refleshBottlesListZP();
 		}
 	}
@@ -1243,6 +1248,8 @@ public class BottleExchangeActivity extends BaseActivity implements OnClickListe
 					HttpResponse response=(HttpResponse)res;
 					if(response!=null){
 						if(response.getStatusLine().getStatusCode()==200){
+							//订单绑定重瓶号
+							OrdersBindGasCynNumber();
 
 						}else if(response.getStatusLine().getStatusCode()==404){
 							Toast.makeText(BottleExchangeActivity.this, "订单不存在",
@@ -1825,6 +1832,9 @@ private void addEditViewChanged(EditText eEditText, final int unitPrice, final T
 						if(response.getStatusLine().getStatusCode()==200){
 							Toast.makeText(BottleExchangeActivity.this, "重瓶绑定订单成功"+response.getStatusLine().getStatusCode(),
 									Toast.LENGTH_LONG).show();
+							//评价成功，跳转支付,,测试需要，等会删除
+							//用户评价阶段
+							orderServiceQualityShow();
 						}else{
 							Toast.makeText(BottleExchangeActivity.this, "重瓶绑定订单失败"+response.getStatusLine().getStatusCode(),
 									Toast.LENGTH_LONG).show();
